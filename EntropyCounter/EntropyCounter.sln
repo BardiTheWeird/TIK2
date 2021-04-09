@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30804.86
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntropyCounter", "EntropyCounter\EntropyCounter.csproj", "{3C76ACC7-B250-4202-B523-E54FE6CA0D21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interface", "Interface\Interface.csproj", "{2406D55F-5F1F-438E-94FF-D41634666A56}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C76ACC7-B250-4202-B523-E54FE6CA0D21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C76ACC7-B250-4202-B523-E54FE6CA0D21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C76ACC7-B250-4202-B523-E54FE6CA0D21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C76ACC7-B250-4202-B523-E54FE6CA0D21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2406D55F-5F1F-438E-94FF-D41634666A56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2406D55F-5F1F-438E-94FF-D41634666A56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2406D55F-5F1F-438E-94FF-D41634666A56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2406D55F-5F1F-438E-94FF-D41634666A56}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {56001021-0BCF-4377-8E77-6F35BEA27C4A}
+	EndGlobalSection
+EndGlobal

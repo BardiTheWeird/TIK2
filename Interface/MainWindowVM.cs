@@ -44,7 +44,7 @@ namespace Interface
 
         public string OutputText { get; set; }
 
-        public ObservableCollection<OperationEntry> OperationsChoice;
+        public ObservableCollection<OperationEntry> OperationsChoice { get; set; }
 
         public ICommand ChooseFile { get; set; }
         public ICommand Encode { get; set; }
