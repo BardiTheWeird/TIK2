@@ -12,11 +12,11 @@ namespace TIK2
         public DecoderNode Right { get; set; } = null;
         public byte? Value { get; set; }
 
-        public DecoderNode GetNextNode(char direction)
+        public DecoderNode GetNextNode(byte direction)
         {
-            if (direction == '0')
+            if (direction == 0)
                 return Left;
-            else if (direction == '1')
+            else if (direction == 1)
                 return Right;
             else
                 throw new ArgumentException();
@@ -33,12 +33,6 @@ namespace TIK2
         private DecoderNode Root { get; set; }
         private DecoderNode CurNode { get; set; }
         private FileStream CurrentFileStream { get; set; }
-        //private string HistoryDumpPath { get; set; } = "decoding_history_dump.csv";
-        //private List<string> Histories { get; set; } = new List<string>(1000);
-
-        public static bool isBreak = false;
-
-        private string History { get; set; }
 
         private void AddCode((byte, string) entry)
         {
@@ -66,56 +60,25 @@ namespace TIK2
             curNode.Value = entry.Item1;
         }
 
-        public void FeedBit(char treat)
+        public void FeedBit(byte treat)
         {
-            History += treat;
             CurNode = CurNode.GetNextNode(treat);
             if (CurNode.Value.HasValue)
             {
-                //Console.Write($"CurNode.Value: {CurNode.Value}");
-                if (isBreak)
-                {
-                    if (CurNode.Value.Value == 201)
-                    {
-                        Console.Write("");
-                    }
-                    else
-                        isBreak = false;
-                }
                 var valToWrite = CurNode.Value.Value;
                 WriteByte(valToWrite);
                 CurNode = Root;
-                //CsvEntryDump(History, valToWrite);
-                History = "";
             }
         }
 
-        //private void CsvEntryDump(string histoty, byte value)
-        //{
-        //    Histories.Add($"{histoty},{value}\n");
-        //    if (Histories.Count == 10000)
-        //    {
-        //        File.AppendAllText(HistoryDumpPath, string.Join("", Histories));
-        //        Histories.Clear();
-        //    }
-        //}
-
-        //public void DumpCurrentHistory()
-        //{
-        //    if (History.Length > 0)
-        //        Histories.Add($"{History},\n");
-
-        //    File.AppendAllText(HistoryDumpPath, string.Join("", Histories));
-        //}
-
-        public void FeedBits(string food)
+        public void FeedBytes(params byte[] food)
         {
-            foreach (var treat in food)
-                FeedBit(treat);
+            foreach (var num in food)
+            {
+                for (int i = 7; i >= 0; i--)
+                    FeedBit((byte)((num >> i) & 1));
+            }
         }
-
-        public void FeedBytes(params byte[] food) =>
-            FeedBits(string.Join("", food.Select(b => Convert.ToString(b, 2).PadLeft(8, '0'))));
 
         public DecoderTree(IEnumerable<(byte, string)> dict)
         {

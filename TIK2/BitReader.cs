@@ -18,7 +18,6 @@ namespace TIK2
         private FileStream _fs;
         private byte[] _buffer = new byte[1];
         private byte _curByte => _buffer[0];
-        private string _curByteBin;
         private int _bitIndex = 8;
         #endregion
 
@@ -32,43 +31,43 @@ namespace TIK2
             }
 
             _fs.Read(_buffer, 0, 1);
-            _curByteBin = Convert.ToString(_curByte, 2).PadLeft(8, '0');
             _bitIndex = 0;
 
             return true;
         }
 
-        public bool ReadBit(out char output)
+        public bool ReadBit(out byte output)
         {
-            output = 'a';
+            output = 0;
             if (_bitIndex > 7)
                 if (!ReadNextByte())
                     return false;
 
-            output = _curByteBin[_bitIndex++];
+            //output = _curByteBin[_bitIndex++];
+            output = (byte)((_curByte >> (8 - _bitIndex - 1)) & 1);
+            _bitIndex++;
             return true;
         }
 
-        public bool ReadBits(int amount, out string output)
+        public bool ReadBits(int amount, out long output)
         {
-            var sb = new StringBuilder();
-            char curBit = 'a';
-            for (int i = 0; i < amount && ReadBit(out curBit); i++)
-                sb.Append(curBit);
+            output = 0;
+            byte curBit = 0;
+            
+            for (int i = 0; i < amount; i++)
+            {
+                if (!ReadBit(out curBit))
+                    return false;
 
-            output = sb.ToString();
-            if (output.Length < amount)
-                return false;
-
+                output = (output << 1) + curBit;
+            }
             return true;
         }
 
         public bool ReadByte(out byte output)
         {
-            output = 0;
-            var res = ReadBits(8, out var stringRead);
-            if (res)
-                output = Convert.ToByte(stringRead, 2);
+            var res = ReadBits(8, out var bitsRead);
+            output = (byte)bitsRead;
             return res;
         }
 

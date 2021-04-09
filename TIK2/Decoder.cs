@@ -34,10 +34,9 @@ namespace TIK2
                 br.ReadByte(out curByte);
                 var codeLen = curByte + 1;
                 
-                string code;
-                br.ReadBits(codeLen, out code);
+                br.ReadBits(codeLen, out var code);
 
-                dict[i] = (symbol, code);
+                dict[i] = (symbol, Convert.ToString(code, 2).PadLeft(codeLen, '0'));
             }
             return dict;
         }
@@ -52,18 +51,16 @@ namespace TIK2
                 var br = new BitReader(filepathIn);
 
                 // reading the length of a file in BITS
-                byte byteOut;
-                br.ReadByte(out byteOut); // length of a length
-                string fileLengthString;
-                br.ReadBits(byteOut, out fileLengthString);
-                long fileLength = Convert.ToInt64(fileLengthString, 2) + fileLengthString.Length;
+                br.ReadByte(out var lenLength); // length of a length
+
+                br.ReadBits(lenLength, out var fileLength);
+                fileLength += lenLength;
 
                 var dict = DecodeDictionary(br);
                 var decoder = new DecoderTree(dict, filepathOut);
                 var previousPercentage = -1;
 
-                char curBit;
-                while (br.BitsRead < fileLength && br.ReadBit(out curBit))
+                while (br.BitsRead < fileLength && br.ReadBit(out var curBit))
                 {
                     if (token.IsCancellationRequested)
                     {
