@@ -10,6 +10,11 @@ using System.Threading.Tasks;
 
 namespace TIK2
 {
+    public class EmptyFileException : Exception
+    {
+        public EmptyFileException() { }
+    }
+
     public class Encoder : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -30,7 +35,7 @@ namespace TIK2
             }
             catch
             {
-                throw new ArgumentException();
+                throw new EmptyFileException();
             }
 
             var countArr = new long[256];
@@ -188,7 +193,7 @@ namespace TIK2
 
                 return outString;
             }
-            catch (ArgumentException e)
+            catch (EmptyFileException e)
             {
                 Log = "";
                 _sw.Reset();

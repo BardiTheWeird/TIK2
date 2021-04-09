@@ -17,16 +17,26 @@ using System.Windows.Input;
 
 namespace Interface
 {
+    public enum OperationType
+    {
+        Encode,
+        Decode,
+        CountEntropy,
+    }
+
     public class OperationEntry : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
+        public OperationType OperationType { get; set; }
         public string VisibleName { get; set; }
         public Action<object> Execute { get; set; }
         public Func<object, bool> CanExecute { get; set; }
 
-        public OperationEntry(string visibleName, Action<object> execute, Func<object, bool> canExecute = null)
+        public OperationEntry(OperationType operationType, string visibleName, 
+            Action<object> execute, Func<object, bool> canExecute = null)
         {
+            OperationType = operationType;
             VisibleName = visibleName;
             Execute = execute;
             CanExecute = canExecute ?? (x => true);
@@ -36,39 +46,128 @@ namespace Interface
     class MainWindowVM : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
+        void RaisePropertyChanged([CallerMemberName] string name = "") =>
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-        public string InputText { get; set; }
-        public string Filepath { get; set; }
+        string _filepathIn;
+        public string FilepathIn 
+        { 
+            get => _filepathIn;
+            set 
+            {
+                if (value == _filepathIn)
+                    return;
+                _filepathIn = value;
+                RaisePropertyChanged();
+                SetFilepathOut();
+            }
+        }
 
-        public string LogString => Encoder.Log;
+        public string FilepathOut { get; set; }
 
         public string OutputText { get; set; }
 
         public ObservableCollection<OperationEntry> OperationsChoice { get; set; }
 
+        OperationEntry _chosenOperation;
+        public OperationEntry ChosenOperation 
+        { 
+            get => _chosenOperation;
+            set
+            {
+                if (value == _chosenOperation)
+                    return;
+                _chosenOperation = value;
+                RaisePropertyChanged();
+
+                SetFilepathOut();
+            } 
+        }
+
         public ICommand ChooseFile { get; set; }
-        public ICommand Encode { get; set; }
-        public ICommand Decode { get; set; }
-        public ICommand CountEntropy { get; set; }
         public ICommand Cancel { get; set; }
+        public ICommand Execute { get; set; }
 
         private Action _cancelAction { get; set; }
 
         public TIK2.Encoder Encoder { get; set; } = new TIK2.Encoder();
+        //public TIK2. Decoder
         public EntropyCounter.EntropyCounter EntropyCounter { get; set; } = new EntropyCounter.EntropyCounter();
+
+        bool CanCreateFile(string filepath)
+        {
+            FileStream fs = null;
+            try
+            {
+                fs = new FileStream(filepath, FileMode.Create);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (fs !=null)
+                    fs.Close();
+            }
+        }
+
+        void SetFilepathOut()
+        {
+            if (ChosenOperation == null || string.IsNullOrEmpty(FilepathIn))
+                return;
+
+            var directory = Path.GetDirectoryName(FilepathIn);
+            var name = Path.GetFileName(FilepathIn);
+
+            switch (ChosenOperation.OperationType)
+            {
+                case OperationType.CountEntropy:
+                    FilepathOut = string.Empty;
+                    break;
+                case OperationType.Encode:
+                    FilepathOut = Path.Combine(directory, name + ".encoded");
+                    break;
+                case OperationType.Decode:
+                    if (!name.Contains('.'))
+                    {
+                        FilepathOut = Path.Combine(directory, name + " - decoded");
+                        return;
+                    }
+                    
+                    var nameNoExtension = Path.GetFileNameWithoutExtension(name);
+                    var extension = Path.GetExtension(name);
+                    if (extension != ".encoded")
+                    {
+                        FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
+                        return;
+                    }
+
+                    if (!name.Contains('.'))
+                    {
+                        FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded");
+                        return;
+                    }
+
+                    extension = Path.GetExtension(nameNoExtension);
+                    nameNoExtension = Path.GetFileNameWithoutExtension(nameNoExtension);
+                    FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
+                    break;
+            }
+        }
 
         public MainWindowVM()
         {
             //Encoder = new TIK2.Encoder();
             OperationsChoice = new ObservableCollection<OperationEntry>()
             {
-                new OperationEntry("Encode", x =>
+                new OperationEntry(OperationType.Encode, "Encode", x =>
                 {
-                    var outPath = Path.GetDirectoryName(Filepath) + $@"\{Path.GetFileName(Filepath)}.encoded";
                     var bgWorker = new BackgroundWorker();
 
                     var tokenSource = new CancellationTokenSource();
-                    bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(Filepath, outPath, tokenSource.Token);
+                    bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(FilepathIn, FilepathOut, tokenSource.Token);
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
                         if (((string)e.Result).Length > 0)
@@ -86,23 +185,26 @@ namespace Interface
                         OutputText += "Encoding was canceled\n";
 
                         await Task.Delay(1000);
-                        File.Delete(outPath);
+                        if (File.Exists(FilepathOut))
+                            File.Delete(FilepathOut);
                     };
 
-                }, x => File.Exists(Filepath)),
-                new OperationEntry("Decode", x => { }, x => File.Exists(Filepath)),
-                new OperationEntry("Calculate entropy", x =>
+                }, 
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut)),
+                new OperationEntry(OperationType.Decode, "Decode", x => { }, 
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut)),
+                new OperationEntry(OperationType.CountEntropy, "Calculate entropy", x =>
                 {
                     var bgWorker = new BackgroundWorker();
                     var tokenSource = new CancellationTokenSource();
 
                     bgWorker.DoWork += (sender, e) =>
-                        e.Result = (EntropyCounter.FromFilePath(Filepath, tokenSource.Token, out var msElapsed), msElapsed);
+                        e.Result = (EntropyCounter.FromFilePath(FilepathIn, tokenSource.Token, out var msElapsed), msElapsed);
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
                         var res = ((double?, long))e.Result;
                         if (res.Item1 != null)
-                            OutputText += $"{Path.GetFileName(Filepath)} entropy is {res.Item1}. " +
+                            OutputText += $"{Path.GetFileName(FilepathIn)} entropy is {res.Item1:.00000}. " +
                             $"Time elapsed: {res.Item2/1000f:.00}s\n";
                         _cancelAction = null;
                     };
@@ -115,7 +217,8 @@ namespace Interface
                         EntropyCounter.Log = "";
                         OutputText += "Counting entropy was canceled\n";
                     };
-                }, x => File.Exists(Filepath)),
+                }, 
+                    x => File.Exists(FilepathIn)),
             };
 
             ChooseFile = new RelayCommand(x =>
@@ -123,68 +226,10 @@ namespace Interface
                 var openFileDialog = new OpenFileDialog();
                 openFileDialog.Multiselect = false;
                 if (openFileDialog.ShowDialog() == true)
-                    Filepath = openFileDialog.FileName;
+                    FilepathIn = openFileDialog.FileName;
             });
-
-            Encode = new RelayCommand(x =>
-            {
-                var outPath = Path.GetDirectoryName(Filepath) + $@"\{Path.GetFileName(Filepath)}.encoded";
-                var bgWorker = new BackgroundWorker();
-
-                var tokenSource = new CancellationTokenSource();
-                bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(Filepath, outPath, tokenSource.Token);
-                bgWorker.RunWorkerCompleted += (sender, e) => 
-                { 
-                    if (((string)e.Result).Length > 0)
-                        OutputText += e.Result + "\n";
-                    _cancelAction = null;
-                };
-
-                bgWorker.RunWorkerAsync();
-
-                _cancelAction = async () =>
-                {
-                    tokenSource.Cancel();
-                    _cancelAction = null;
-                    Encoder.Log = "";
-                    OutputText += "Encoding was canceled\n";
-
-                    await Task.Delay(1000);
-                    File.Delete(outPath);
-                };
-
-            }, x => File.Exists(Filepath));
-
-            Decode = new RelayCommand(x =>
-            {
-            }, x => File.Exists(Filepath));
-
-            CountEntropy = new RelayCommand(x =>
-            {
-                var bgWorker = new BackgroundWorker();
-                var tokenSource = new CancellationTokenSource();
-
-                bgWorker.DoWork += (sender, e) => 
-                    e.Result = (EntropyCounter.FromFilePath(Filepath, tokenSource.Token, out var msElapsed), msElapsed);
-                bgWorker.RunWorkerCompleted += (sender, e) =>
-                {
-                    var res = ((double?, long))e.Result;
-                    if (res.Item1 != null)
-                        OutputText += $"{Path.GetFileName(Filepath)} entropy is {res.Item1}. " +
-                        $"Time elapsed: {res.Item2/1000f:.00}s\n";
-                    _cancelAction = null;
-                };
-
-                bgWorker.RunWorkerAsync();
-                _cancelAction = () =>
-                {
-                    tokenSource.Cancel();
-                    _cancelAction = null;
-                    EntropyCounter.Log = "";
-                    OutputText += "Counting entropy was canceled\n";
-                };
-            }, x => File.Exists(Filepath)); 
-
+            Execute = new RelayCommand(x => ChosenOperation.Execute(x), 
+                x => ChosenOperation != null && ChosenOperation.CanExecute(x));
             Cancel = new RelayCommand(x => _cancelAction(), x => _cancelAction != null);
         }
     }
