@@ -91,7 +91,7 @@ namespace Interface
         private Action _cancelAction { get; set; }
 
         public TIK2.Encoder Encoder { get; set; } = new TIK2.Encoder();
-        //public TIK2. Decoder
+        public TIK2.Decoder Decoder { get; set; } = new TIK2.Decoder();
         public EntropyCounter.EntropyCounter EntropyCounter { get; set; } = new EntropyCounter.EntropyCounter();
 
         bool CanCreateFile(string filepath)
@@ -99,7 +99,8 @@ namespace Interface
             FileStream fs = null;
             try
             {
-                fs = new FileStream(filepath, FileMode.Create);
+                using (fs = new FileStream(filepath, FileMode.Create)) { }
+                File.Delete(filepath);
                 return true;
             }
             catch
@@ -170,7 +171,7 @@ namespace Interface
                     bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(FilepathIn, FilepathOut, tokenSource.Token);
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
-                        if (((string)e.Result).Length > 0)
+                        if (!string.IsNullOrEmpty((string)e.Result))
                             OutputText += e.Result + "\n";
                         _cancelAction = null;
                     };
@@ -188,10 +189,35 @@ namespace Interface
                         if (File.Exists(FilepathOut))
                             File.Delete(FilepathOut);
                     };
-
                 }, 
                     x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut)),
-                new OperationEntry(OperationType.Decode, "Decode", x => { }, 
+                new OperationEntry(OperationType.Decode, "Decode", x => 
+                {
+                    var bgWorker = new BackgroundWorker();
+
+                    var tokenSource = new CancellationTokenSource();
+                    bgWorker.DoWork += (sender, e) => e.Result = Decoder.Decode(FilepathIn, FilepathOut, tokenSource.Token);
+                    bgWorker.RunWorkerCompleted += (sender, e) =>
+                    {
+                        if (!string.IsNullOrEmpty((string)e.Result))
+                            OutputText += e.Result + "\n";
+                        _cancelAction = null;
+                    };
+
+                    bgWorker.RunWorkerAsync();
+
+                    _cancelAction = async () =>
+                    {
+                        tokenSource.Cancel();
+                        _cancelAction = null;
+                        Decoder.Log = "";
+                        OutputText += "Decoding was canceled\n";
+
+                        await Task.Delay(1000);
+                        if (File.Exists(FilepathOut))
+                            File.Delete(FilepathOut);
+                    };
+                }, 
                     x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut)),
                 new OperationEntry(OperationType.CountEntropy, "Calculate entropy", x =>
                 {
@@ -237,9 +263,8 @@ namespace Interface
     public class LogValueConverter : IMultiValueConverter
     {
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture) =>
-            values.Select(v => v as string)
-                .Where(s => !string.IsNullOrEmpty(s))
-                .FirstOrDefault();
+            string.Join("", values.Select(v => v as string)
+                .Where(s => !string.IsNullOrEmpty(s)));
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {

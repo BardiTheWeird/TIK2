@@ -11,7 +11,7 @@ namespace TIK2
         public string Filepath { get; set; }
         public long FileLength { get; set; }
         public long BytesRead { get; set; } = -1;
-        public long BitsRed => BytesRead * 8 + _bitIndex;
+        public long BitsRead => BytesRead * 8 + _bitIndex;
         #endregion
 
         #region fields

@@ -67,7 +67,7 @@ namespace EntropyCounter
                 if (percentage > previousPercentage)
                 {
                     previousPercentage = percentage;
-                    Log = $"Counting entropy... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                    Log = $"Calculating entropy... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                 }
 
                 fs.Read(buffer, 0, chunkSize);

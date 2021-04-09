@@ -1,12 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace TIK2
 {
-    static class Decoder
+    public class Decoder : INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public string Log { get; set; }
+
+        private Stopwatch _sw = new Stopwatch();
+        private string _errorDumpFile = "decoderErrorDump.txt";
+
         private static (byte, string)[] DecodeDictionary(BitReader br)
         {
             byte curByte;
@@ -31,43 +42,63 @@ namespace TIK2
             return dict;
         }
 
-        public static void Decode(string filepathIn, string filepathOut)
+        public string Decode(string filepathIn, string filepathOut, CancellationToken token)
         {
-            Console.WriteLine("Started decoding...");
-            var sw = new Stopwatch();
-            sw.Start();
-
-            var br = new BitReader(filepathIn);
-            
-            // reading the length of a file in BITS
-            byte byteOut;
-            br.ReadByte(out byteOut); // length of a length
-            string fileLengthString;
-            br.ReadBits(byteOut, out fileLengthString);
-            long fileLength = Convert.ToInt64(fileLengthString, 2) + fileLengthString.Length;
-
-            var dict = DecodeDictionary(br);
-            var decoder = new DecoderTree(dict, filepathOut);
-
-            Console.WriteLine($"Finished preparations. Time elapsed: {sw.ElapsedMilliseconds / 1000f:.00}s");
-            var previousPercentage = -1;
-
-            char curBit;
-            while(br.BitsRed < fileLength && br.ReadBit(out curBit))
+            try
             {
-                decoder.FeedBit(curBit);
+                _sw.Start();
 
-                var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
-                if (percentage > previousPercentage)
+                Log = "Started decoding...";
+                var br = new BitReader(filepathIn);
+
+                // reading the length of a file in BITS
+                byte byteOut;
+                br.ReadByte(out byteOut); // length of a length
+                string fileLengthString;
+                br.ReadBits(byteOut, out fileLengthString);
+                long fileLength = Convert.ToInt64(fileLengthString, 2) + fileLengthString.Length;
+
+                var dict = DecodeDictionary(br);
+                var decoder = new DecoderTree(dict, filepathOut);
+                var previousPercentage = -1;
+
+                char curBit;
+                while (br.BitsRead < fileLength && br.ReadBit(out curBit))
                 {
-                    previousPercentage = percentage;
-                    Console.WriteLine($"\tDone {percentage * 1}%;\tTime elapsed: {sw.ElapsedMilliseconds / 1000f:.00}s");
-                }
-            }
-            decoder.FinishWriting();
+                    if (token.IsCancellationRequested)
+                    {
+                        br.StopReading();
+                        _sw.Reset();
+                        Log = "";
+                        return string.Empty;
+                    }
 
-            sw.Stop();
-            Console.WriteLine($"Finished decoding. Time elapsed: {sw.ElapsedMilliseconds / 1000f:.00}s");
+                    decoder.FeedBit(curBit);
+
+                    var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
+                    if (percentage > previousPercentage)
+                    {
+                        previousPercentage = percentage;
+                        Log = $"\tDone {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                    }
+                }
+                decoder.FinishWriting();
+
+                _sw.Stop();
+                Log = "";
+                var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}. " +
+                    $"Time elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                _sw.Reset();
+                return res;
+            }
+            catch (Exception e)
+            {
+                Log = "";
+                _sw.Reset();
+                File.WriteAllText(_errorDumpFile, e.Message);
+
+                return $"Decoding failed. Details are in the encoder error dump file";
+            }
         }
     }
 }

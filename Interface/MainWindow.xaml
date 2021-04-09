@@ -59,7 +59,7 @@
             ItemsSource="{Binding OperationsChoice}" SelectedItem="{Binding ChosenOperation}">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="Name" Width="200" DisplayMemberBinding="{Binding VisibleName}"></GridViewColumn>
+                    <GridViewColumn Width="200" DisplayMemberBinding="{Binding VisibleName}"></GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -74,6 +74,7 @@
             <TextBlock.Text>
                 <MultiBinding Converter="{StaticResource LogValueConverter}">
                     <Binding Path="Encoder.Log"/>
+                    <Binding Path="Decoder.Log"/>
                     <Binding Path="EntropyCounter.Log"/>
                 </MultiBinding>
             </TextBlock.Text>
