@@ -57,6 +57,7 @@ namespace TIK2
         {
             Filepath = filepath;
             _fs = new FileStream(filepath, FileMode.Create);
+            _buffer = new BitBuffer();
         }
         #endregion
     }

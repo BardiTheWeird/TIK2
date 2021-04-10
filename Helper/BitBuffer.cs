@@ -50,7 +50,7 @@ namespace Helper
 
         public void AppendBuffer(BitBuffer buffer)
         {
-            for (int i = 0; i < buffer.ByteLength - 1; i++)
+            for (int i = 0; i < buffer.ByteBuffer.Count - 1; i++)
                 AppendByte(buffer.ByteBuffer[i]);
 
             var lastByte = buffer.ByteBuffer[^1];

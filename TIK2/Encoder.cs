@@ -163,7 +163,7 @@ namespace TIK2
                         Log = $"Encoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                     }
                 }
-                bw.DumpCharBuffer();
+                bw.WriteTheRestOfTheBuffer();
                 bw.StopWriting();
 
                 Log = "";

@@ -9,6 +9,6 @@ namespace TIK2
     class SymbolEncoding
     {
         public byte Symbol { get; set; }
-        public BitBuffer Code { get; set; }
+        public BitBuffer Code { get; set; } = new BitBuffer();
     }
 }
