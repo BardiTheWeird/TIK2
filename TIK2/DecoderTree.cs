@@ -33,6 +33,8 @@ namespace TIK2
         private DecoderNode Root { get; set; }
         private DecoderNode CurNode { get; set; }
         private FileStream CurrentFileStream { get; set; }
+        
+        public long BytesWritten { get; set; }
 
         private void AddCode(SymbolEncoding entry)
         {
@@ -109,14 +111,15 @@ namespace TIK2
 
         public void WriteByte(byte b)
         {
-            //Console.WriteLine($"About to write {b}");
-
             if (CurrentFileStream != null && CurrentFileStream.CanWrite)
+            {
                 CurrentFileStream.Write(new byte[] { b }, 0, 1);
+                BytesWritten++;
+            }
         }
 
 
-        public void FinishWriting()
+        public void StopWriting()
         {
             CurrentFileStream.Close();
             //DumpCurrentHistory();

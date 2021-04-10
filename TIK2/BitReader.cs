@@ -11,49 +11,38 @@ namespace TIK2
         #region properties
         public string Filepath { get; set; }
         public long FileLength { get; set; }
-        public long BytesRead { get; set; } = -1;
-        public long BitsRead => BytesRead * 8 + _bitIndex;
+        public long BytesRead => BitsRead / 8;
+        public long BitsRead { get; set; } = -1;
         #endregion
 
         #region fields
         private FileStream _fs;
-        private byte[] _buffer = new byte[1];
-        private byte _curByte => _buffer[0];
-        private int _bitIndex = 8;
+
+        private int _byteChunkSize;
+        private int _bitChunkSize => _byteChunkSize * 8;
+        private BitBuffer _bitBuffer;
+        private int _bitIndex;
         #endregion
 
         #region readingStuff
-        private bool ReadNextByte()
-        {
-            if (++BytesRead >= FileLength)
-            {
-                _fs.Close();
-                return false;
-            }
-
-            _fs.Read(_buffer, 0, 1);
-            _bitIndex = 0;
-
-            return true;
-        }
 
         public bool ReadBit(out byte output)
         {
-            output = 0;
-            if (_bitIndex > 7)
-                if (!ReadNextByte())
-                    return false;
+            BitsRead++;
+            if (_bitIndex >= _bitChunkSize)
+            {
+                _fs.Read(_bitBuffer.ByteBufferSpan.Slice(0));
+                _bitIndex = 0;
+            }
 
-            //output = _curByteBin[_bitIndex++];
-            output = (byte)((_curByte >> (8 - _bitIndex - 1)) & 1);
-            _bitIndex++;
+            output = _bitBuffer[_bitIndex++];
             return true;
         }
 
         public bool ReadBits(int amount, out BitBuffer output)
         {
             output = new BitBuffer();
-            byte curBit = 0;
+            byte curBit;
             
             for (int i = 0; i < amount; i++)
             {
@@ -87,6 +76,11 @@ namespace TIK2
 
             if (FileLength < 1)
                 throw new Exception($"The file at {filepath} is empty");
+
+            _byteChunkSize = ReadingWriting.MB;
+            _bitIndex = _bitChunkSize;
+            _bitBuffer = new BitBuffer();
+            _bitBuffer.FillWithZeroes(_byteChunkSize);
         }
         #endregion
     }

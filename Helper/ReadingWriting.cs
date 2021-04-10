@@ -19,14 +19,17 @@ namespace Helper
         {
             sw.Start();
             var count = new ConcurrentDictionary<byte, long>();
+            for (int i = 0; i < 256; i++)
+                count.GetOrAdd((byte)i, 0);
 
             var fs = new FileStream(filepath, FileMode.Open);
             long len = fs.Length;
             var chunkSize = 1 * MB;
+            //var chunkSize = 1;
             var buffer = new byte[chunkSize];
 
             var previousPercentage = -1;
-            for (int i = 0; i < len; i += chunkSize)
+            for (long i = 0; i < len; i += chunkSize)
             {
                 if (token.IsCancellationRequested)
                 {

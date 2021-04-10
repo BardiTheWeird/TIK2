@@ -10,8 +10,8 @@ namespace Helper
     public class BitBuffer
     {
         public List<byte> ByteBuffer { get; set; }
-        public Span<byte> GetByteBufferSpan => CollectionsMarshal.AsSpan(ByteBuffer);
-        public Span<byte> GetFullBytesSpan => GetByteBufferSpan.Slice(0, BitLength / 8);
+        public Span<byte> ByteBufferSpan => CollectionsMarshal.AsSpan(ByteBuffer);
+        public Span<byte> GetFullBytesSpan => ByteBufferSpan.Slice(0, BitLength / 8);
         public int BitLength { get; set; }
         public int FullBytes => BitLength / 8;
 
@@ -87,6 +87,12 @@ namespace Helper
         public void ShiftLastByteToWritableState() =>
             ByteBuffer[^1] = (byte)(ByteBuffer[^1] << ((8 - (BitLength % 8)) % 8));
 
+        public void FillWithZeroes(int count)
+        {
+            ByteBuffer = Enumerable.Repeat<byte>(0, count).ToList();
+            BitLength = count * 8;
+        }
+        
         public void ClearAllFullBytes()
         {
             if (BitLength % 8 == 0)

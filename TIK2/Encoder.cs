@@ -151,7 +151,7 @@ namespace TIK2
                 var readBuffer = new byte[chunkSize];
                 var len = fs.Length;
 
-                for (int i = 0; i < len; i += chunkSize)
+                for (long i = 0; i < len; i += chunkSize)
                 {
                     if (token.IsCancellationRequested)
                     {

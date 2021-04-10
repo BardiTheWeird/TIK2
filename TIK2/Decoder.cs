@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Helper;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -67,19 +68,19 @@ namespace TIK2
             var dict = DecodeDictionary(br);
             var decoder = new DecoderTree(dict, filepathOut);
 
+            var readingChunk = ReadingWriting.MB;
             var previousPercentage = -1;
 
-            while (br.BitsRead < totalLength && br.ReadBit(out var curBit))
+            while (br.BitsRead < totalLength)
             {
                 if (token.IsCancellationRequested)
                 {
                     br.StopReading();
+                    decoder.StopWriting();
                     _sw.Reset();
                     Log = "";
                     return string.Empty;
                 }
-
-                decoder.FeedBit(curBit);
 
                 var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
                 if (percentage > previousPercentage)
@@ -87,8 +88,16 @@ namespace TIK2
                     previousPercentage = percentage;
                     Log = $"Decoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                 }
+
+                var higherLimit = Math.Min(readingChunk, totalLength - br.BitsRead);
+                for (int i = 0; i < higherLimit; i++)
+                {
+                    br.ReadBit(out var curBit);
+                    decoder.FeedBit(curBit);
+                }
             }
-            decoder.FinishWriting();
+            decoder.StopWriting();
+            br.StopReading();
 
             _sw.Stop();
             Log = "";
