@@ -60,8 +60,8 @@ namespace TIK2
                 var dict = DecodeDictionary(br);
                 var decoder = new DecoderTree(dict, filepathOut);
 
-            File.WriteAllText("decoded_dict.txt", string.Join('\n',
-                dict.Select(e => $"{e.Symbol},{e.Code}")));
+            //File.WriteAllText("decoded_dict.txt", string.Join('\n',
+            //    dict.Select(e => $"{e.Symbol},{e.Code}")));
 
                 var previousPercentage = -1;
 

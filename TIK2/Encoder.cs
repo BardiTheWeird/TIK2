@@ -114,12 +114,11 @@ namespace TIK2
                     return string.Empty;
 
                 var dict = GetEncodingDictionary(count);
-                File.WriteAllText("encoded_dict.txt", string.Join('\n',
-    dict.Select(e => $"{e.Value.Symbol},{e.Value.Code}")));
+    //            File.WriteAllText("encoded_dict.txt", string.Join('\n',
+    //dict.Select(e => $"{e.Value.Symbol},{e.Value.Code}")));
 
                 // the file format is as follows:
-                // first 8 bits - the length of the length of the encoded file in BITS. Doesn't count itself
-                // the length in bits
+                // the amount of bits to read in the final byte
                 // 8 bits - the amount of entries in a dictionary (offset by 1)
                 // dictionary entries in the format "symbol|codeLen|code"
                 // encoded file
@@ -144,26 +143,33 @@ namespace TIK2
 
                 var previousPercentage = -1;
 
-                var br = new BitReader(filepathIn);
-                byte curByte;
-                while (br.ReadByte(out curByte))
+                //var br = new BitReader(filepathIn);
+                var fs = new FileStream(filepathIn, FileMode.Open);
+                var chunkSize = ReadingWriting.MB;
+                var readBuffer = new byte[chunkSize];
+                var len = fs.Length;
+
+                for (int i = 0; i < len; i += chunkSize)
                 {
                     if (token.IsCancellationRequested)
                     {
-                        br.StopReading();
+                        fs.Close();
                         bw.StopWriting();
                         _sw.Reset();
                         return string.Empty;
                     }
 
-                    bw.WriteBuffer(dict[curByte].Code);
-
-                    var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
+                    var percentage = (int)(Math.Round(i / (float)len, 2) * 100);
                     if (percentage > previousPercentage)
                     {
                         previousPercentage = percentage;
                         Log = $"Encoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                     }
+
+                    fs.Read(readBuffer, 0, chunkSize);
+                    var higherLimit = Math.Min(chunkSize, len - i);
+                    for (int j = 0; j < higherLimit; j++)
+                        bw.WriteBuffer(dict[readBuffer[j]].Code);
                 }
                 bw.WriteTheRestOfTheBuffer();
                 bw.StopWriting();
