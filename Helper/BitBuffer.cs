@@ -73,6 +73,13 @@ namespace Helper
             {
                 var byteIndex = index / 8;
                 byte bitOffset = (byte)(index % 8);
+
+                if (byteIndex == ByteBuffer.Count - 1 && BitLength % 8 != 0)
+                {
+                    var byteInQuestion = (byte)(ByteBuffer[^1] << (8 - BitLength % 8));
+                    return byteInQuestion.GetBit(bitOffset);
+                }
+
                 return ByteBuffer[byteIndex].GetBit(bitOffset);
             }
         }
@@ -100,6 +107,30 @@ namespace Helper
         {
             ByteBuffer.Clear();
             BitLength = 0;
+        }
+
+        public long ToLong(int start, int byteCount)
+        {
+            if (ByteBuffer.Count - start > byteCount || byteCount > 8)
+                throw new ArgumentException();
+
+            long output = 0;
+            for (int i = 0; i < byteCount; i++)
+            {
+                var offsettedIndex = i + start;
+                output += ByteBuffer[offsettedIndex] << (8 * (byteCount - i - 1));
+            }
+            return output;
+        }
+
+        public override string ToString()
+        {
+            if (BitLength % 8 == 0)
+                return string.Join("_", ByteBuffer.Select(b => Convert.ToString(b, 2).PadLeft(8, '0')));
+
+            return string.Join('_', Enumerable.Range(0, ByteBuffer.Count - 1)
+                .Select(i => Convert.ToString(ByteBuffer[i], 2).PadLeft(8, '0'))
+                .Append(Convert.ToString(ByteBuffer[^1], 2).PadLeft(BitLength % 8, '0')));
         }
 
         public BitBuffer()

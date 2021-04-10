@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -18,13 +19,13 @@ namespace TIK2
         private Stopwatch _sw = new Stopwatch();
         private string _errorDumpFile = "decoderErrorDump.txt";
 
-        private static (byte, string)[] DecodeDictionary(BitReader br)
+        private static SymbolEncoding[] DecodeDictionary(BitReader br)
         {
             byte curByte;
             br.ReadByte(out curByte);
             var dictLen = curByte + 1;
 
-            var dict = new (byte, string)[dictLen];
+            var dict = new SymbolEncoding[dictLen];
 
             for (int i = 0; i < dictLen; i++)
             {
@@ -36,15 +37,15 @@ namespace TIK2
                 
                 br.ReadBits(codeLen, out var code);
 
-                dict[i] = (symbol, Convert.ToString(code, 2).PadLeft(codeLen, '0'));
+                dict[i] = new SymbolEncoding(symbol, code);
             }
             return dict;
         }
 
         public string Decode(string filepathIn, string filepathOut, CancellationToken token)
         {
-            try
-            {
+            //try
+            //{
                 _sw.Start();
 
                 Log = "Started decoding...";
@@ -53,10 +54,15 @@ namespace TIK2
                 // reading the length of a file in BITS
                 // br.ReadByte(out var lenLength); // length of a length
 
-                br.ReadBits(64, out var fileLength);
+                br.ReadBits(64, out var fileLengthBuffer);
+                var fileLength = fileLengthBuffer.ToLong(0, 8);
 
                 var dict = DecodeDictionary(br);
                 var decoder = new DecoderTree(dict, filepathOut);
+
+            File.WriteAllText("decoded_dict.txt", string.Join('\n',
+                dict.Select(e => $"{e.Symbol},{e.Code}")));
+
                 var previousPercentage = -1;
 
                 while (br.BitsRead < fileLength && br.ReadBit(out var curBit))
@@ -86,15 +92,15 @@ namespace TIK2
                     $"Time elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                 _sw.Reset();
                 return res;
-            }
-            catch (Exception e)
-            {
-                Log = "";
-                _sw.Reset();
-                File.WriteAllText(_errorDumpFile, e.Message);
+            //}
+            //catch (Exception e)
+            //{
+            //    Log = "";
+            //    _sw.Reset();
+            //    File.WriteAllText(_errorDumpFile, e.Message);
 
-                return $"Decoding failed. Details are in the encoder error dump file";
-            }
+            //    return $"Decoding failed. Details are in the encoder error dump file";
+            //}
         }
     }
 }

@@ -114,6 +114,8 @@ namespace TIK2
                     return string.Empty;
 
                 var dict = GetEncodingDictionary(count);
+                File.WriteAllText("encoded_dict.txt", string.Join('\n',
+    dict.Select(e => $"{e.Value.Symbol},{e.Value.Code}")));
 
                 // the file format is as follows:
                 // first 8 bits - the length of the length of the encoded file in BITS. Doesn't count itself

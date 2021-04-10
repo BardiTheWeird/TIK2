@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Helper;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -49,9 +50,9 @@ namespace TIK2
             return true;
         }
 
-        public bool ReadBits(int amount, out long output)
+        public bool ReadBits(int amount, out BitBuffer output)
         {
-            output = 0;
+            output = new BitBuffer();
             byte curBit = 0;
             
             for (int i = 0; i < amount; i++)
@@ -59,15 +60,17 @@ namespace TIK2
                 if (!ReadBit(out curBit))
                     return false;
 
-                output = (output << 1) + curBit;
+                output.AppendBit(curBit);
             }
             return true;
         }
 
         public bool ReadByte(out byte output)
         {
+            output = 0;
             var res = ReadBits(8, out var bitsRead);
-            output = (byte)bitsRead;
+            if (res)
+                output = bitsRead.ByteBuffer[0];
             return res;
         }
 

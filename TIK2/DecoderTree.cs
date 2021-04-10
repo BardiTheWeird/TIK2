@@ -34,21 +34,25 @@ namespace TIK2
         private DecoderNode CurNode { get; set; }
         private FileStream CurrentFileStream { get; set; }
 
-        private void AddCode((byte, string) entry)
+        private void AddCode(SymbolEncoding entry)
         {
-            var curNode = Root;
-            foreach (var bit in entry.Item2)
-            {
-                if (curNode.Value != null)
-                    throw new Exception($"Encountered an already filled code node when adding a code {entry.Item2}");
+            var code = entry.Code;
 
-                if (bit == '0')
+            var curNode = Root;
+            for (int i = 0; i < code.BitLength; i++)
+            {
+                var bit = code[i];
+
+                if (curNode.Value != null)
+                    throw new Exception($"Encountered an already filled code node when adding a code {code}");
+
+                if (bit == 0)
                 {
                     if (curNode.Left == null)
                         curNode.Left = new DecoderNode();
                     curNode = curNode.Left;
                 }
-                else if (bit == '1')
+                else if (bit == 1)
                 {
                     if (curNode.Right == null)
                         curNode.Right = new DecoderNode();
@@ -57,7 +61,7 @@ namespace TIK2
                 else
                     throw new ArgumentException();
             }
-            curNode.Value = entry.Item1;
+            curNode.Value = entry.Symbol;
         }
 
         public void FeedBit(byte treat)
@@ -80,7 +84,7 @@ namespace TIK2
             }
         }
 
-        public DecoderTree(IEnumerable<(byte, string)> dict)
+        public DecoderTree(IEnumerable<SymbolEncoding> dict)
         {
             Root = new DecoderNode();
             CurNode = Root;
@@ -91,7 +95,7 @@ namespace TIK2
                 AddCode(entry);
         }
 
-        public DecoderTree(IEnumerable<(byte, string)> dict, string outputFilepath) : this(dict)
+        public DecoderTree(IEnumerable<SymbolEncoding> dict, string outputFilepath) : this(dict)
         {
             SetFileStream(outputFilepath);
         }
