@@ -17,8 +17,6 @@ namespace TIK2
 
     public class Encoder : INotifyPropertyChanged
     {
-        static int MB = 1048576;
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         public string Log { get; set; }
@@ -28,7 +26,7 @@ namespace TIK2
 
         private (byte, long)[] GetSymbolCountOrdered(string filepathIn, CancellationToken token)
         {
-            var countArr = EntropyCounter.EntropyCounter.GetFrequencyArray(filepathIn, _sw,
+            var countArr = Helper.ReadingWriting.GetFrequencyArray(filepathIn, _sw,
                 x => Log = x, "Creating an encoding dictionary...", token);
 
             Log = "";
@@ -55,7 +53,7 @@ namespace TIK2
         private static Dictionary<byte, string> GetEncodingDictionary((byte, long)[] count)
         {
             count = CumulativeCount(count).ToArray();
-            var codeTable = count.Select(p => (p.Item1, "")).ToArray();
+            var codeTable = count.Select(p => new SymbolEncoding { Symbol = p.Item1 }).ToArray();
 
             void createEncoderDictionaryRec(int lo, int hi)
             {
