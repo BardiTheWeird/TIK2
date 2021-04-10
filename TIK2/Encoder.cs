@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Helper;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -50,7 +52,7 @@ namespace TIK2
             }
         }
 
-        private static Dictionary<byte, string> GetEncodingDictionary((byte, long)[] count)
+        private static Dictionary<byte, SymbolEncoding> GetEncodingDictionary((byte, long)[] count)
         {
             count = CumulativeCount(count).ToArray();
             var codeTable = count.Select(p => new SymbolEncoding { Symbol = p.Item1 }).ToArray();
@@ -70,22 +72,26 @@ namespace TIK2
                         leftPartHigh = i;
                         break;
                     }
-                    codeTable[i].Item2 += '0';
+                    codeTable[i].Code.AddBit(0);
+                    codeTable[i].CodeLength++;
                 }
                 for (int i = leftPartHigh; i < hi; i++)
-                    codeTable[i].Item2 += '1';
+                {
+                    codeTable[i].Code.AddBit(1);
+                    codeTable[i].CodeLength++;
+                }
 
                 createEncoderDictionaryRec(lo, leftPartHigh);
                 createEncoderDictionaryRec(leftPartHigh, hi);
             }
 
             createEncoderDictionaryRec(0, count.Length);
-            return codeTable.ToDictionary(p => p.Item1, p => p.Item2);
+            return codeTable.ToDictionary(p => p.Symbol, p => p);
         }
 
-        private static string GetEncodedDictionaryString(Dictionary<byte, string> dict)
+        private static string GetEncodedDictionaryString(Dictionary<byte, SymbolEncoding> dict)
         {
-            var sb = new StringBuilder();
+            BigInteger encoded = 0;
 
             sb.Append(Convert.ToString(dict.Count - 1, 2).PadLeft(8, '0'));
 
