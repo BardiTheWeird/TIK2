@@ -118,7 +118,7 @@ namespace TIK2
     //dict.Select(e => $"{e.Value.Symbol},{e.Value.Code}")));
 
                 // the file format is as follows:
-                // the amount of bits to read in the final byte
+                // 3 bits - the amount of bits to read in the final byte
                 // 8 bits - the amount of entries in a dictionary (offset by 1)
                 // dictionary entries in the format "symbol|codeLen|code"
                 // encoded file
@@ -129,13 +129,15 @@ namespace TIK2
                 foreach (var entry in count)
                     fileLen += entry.Item2 * dict[entry.Item1].Code.BitLength;
 
-                fileLen += 64 + encodedDict.BitLength;
+                fileLen += encodedDict.BitLength + 3;
+
+                var finalByteLen = (byte)(fileLen % 8);
 
                 //var fileLenBits = Convert.ToString(fileLen, 2);
                 //var lengthLen = Convert.ToString(fileLenBits.Length, 2).PadLeft(8, '0');
 
                 var buffer = new BitBuffer();
-                buffer.AppendLong(fileLen);
+                buffer.AppendPartialByte(finalByteLen, 3);
                 buffer.AppendBuffer(encodedDict);
 
                 var bw = new BitWriter(filepathOut);

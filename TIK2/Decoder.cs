@@ -46,52 +46,56 @@ namespace TIK2
         {
             //try
             //{
-                _sw.Start();
+            _sw.Start();
 
-                Log = "Started decoding...";
-                var br = new BitReader(filepathIn);
+            Log = "Started decoding...";
+            var br = new BitReader(filepathIn);
 
-                // reading the length of a file in BITS
-                // br.ReadByte(out var lenLength); // length of a length
+            // reading the length of a file in BITS
+            // br.ReadByte(out var lenLength); // length of a length
 
-                br.ReadBits(64, out var fileLengthBuffer);
-                var fileLength = fileLengthBuffer.ToLong(0, 8);
+            //br.ReadBits(64, out var fileLengthBuffer);
+            //var fileLength = fileLengthBuffer.ToLong(0, 8);
 
-                var dict = DecodeDictionary(br);
-                var decoder = new DecoderTree(dict, filepathOut);
+            br.ReadBits(3, out var finalByteLengthBuffer);
+            var finalByteLength = finalByteLengthBuffer.ByteBuffer[0];
+            if (finalByteLength == 0)
+                finalByteLength = 8;
 
-            //File.WriteAllText("decoded_dict.txt", string.Join('\n',
-            //    dict.Select(e => $"{e.Symbol},{e.Code}")));
+            var totalLength = br.FileLength * 8 - (8 - finalByteLength);
 
-                var previousPercentage = -1;
+            var dict = DecodeDictionary(br);
+            var decoder = new DecoderTree(dict, filepathOut);
 
-                while (br.BitsRead < fileLength && br.ReadBit(out var curBit))
+            var previousPercentage = -1;
+
+            while (br.BitsRead < totalLength && br.ReadBit(out var curBit))
+            {
+                if (token.IsCancellationRequested)
                 {
-                    if (token.IsCancellationRequested)
-                    {
-                        br.StopReading();
-                        _sw.Reset();
-                        Log = "";
-                        return string.Empty;
-                    }
-
-                    decoder.FeedBit(curBit);
-
-                    var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
-                    if (percentage > previousPercentage)
-                    {
-                        previousPercentage = percentage;
-                        Log = $"Decoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
-                    }
+                    br.StopReading();
+                    _sw.Reset();
+                    Log = "";
+                    return string.Empty;
                 }
-                decoder.FinishWriting();
 
-                _sw.Stop();
-                Log = "";
-                var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}. " +
-                    $"Time elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
-                _sw.Reset();
-                return res;
+                decoder.FeedBit(curBit);
+
+                var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
+                if (percentage > previousPercentage)
+                {
+                    previousPercentage = percentage;
+                    Log = $"Decoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                }
+            }
+            decoder.FinishWriting();
+
+            _sw.Stop();
+            Log = "";
+            var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}. " +
+                $"Time elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+            _sw.Reset();
+            return res;
             //}
             //catch (Exception e)
             //{
