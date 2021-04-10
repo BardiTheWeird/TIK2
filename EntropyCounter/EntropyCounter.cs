@@ -39,13 +39,11 @@ namespace EntropyCounter
             return CountEntropy(count);
         }
 
-        public double? FromFilePath(string filepath, CancellationToken token, out long msElapsed)
+        public static long[] GetFrequencyArray(string filepath, Stopwatch sw, 
+            Action<string> updateLog, string progressString, CancellationToken token)
         {
-            msElapsed = 0;
-            _sw.Start();
+            sw.Start();
             var count = new ConcurrentDictionary<byte, long>();
-            //for (byte i = 0; i <= 255; i++)
-            //    count.TryAdd(i, 0);
 
             var fs = new FileStream(filepath, FileMode.Open);
             var len = fs.Length;
@@ -53,13 +51,13 @@ namespace EntropyCounter
             var buffer = new byte[chunkSize];
 
             var previousPercentage = -1;
-            for (int i = 0; i < len; i += chunkSize) 
+            for (int i = 0; i < len; i += chunkSize)
             {
                 if (token.IsCancellationRequested)
                 {
                     fs.Close();
-                    Log = "";
-                    _sw.Reset();
+                    updateLog("");
+                    sw.Reset();
                     return null;
                 }
 
@@ -67,7 +65,7 @@ namespace EntropyCounter
                 if (percentage > previousPercentage)
                 {
                     previousPercentage = percentage;
-                    Log = $"Calculating entropy... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                    updateLog($"{progressString} {percentage * 1}%;\tTime elapsed: {sw.ElapsedMilliseconds / 1000f:.00}s");
                 }
 
                 fs.Read(buffer, 0, chunkSize);
@@ -79,11 +77,22 @@ namespace EntropyCounter
                 });
             }
             fs.Close();
+
+            return count.Select(x => x.Value).ToArray();
+        }
+
+        public double? FromFilePath(string filepath, CancellationToken token, out long msElapsed)
+        {
+            var count = GetFrequencyArray(filepath, _sw, x => Log = x, "Calculating entropy...", token);
+
             Log = "";
             msElapsed = _sw.ElapsedMilliseconds;
             _sw.Reset();
 
-            return CountEntropy(count.Select(x => x.Value));
+            if (token.IsCancellationRequested)
+                return null;
+
+            return CountEntropy(count);
         }
     }
 }

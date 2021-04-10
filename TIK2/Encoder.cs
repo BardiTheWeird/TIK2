@@ -17,6 +17,8 @@ namespace TIK2
 
     public class Encoder : INotifyPropertyChanged
     {
+        static int MB = 1048576;
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         public string Log { get; set; }
@@ -26,40 +28,12 @@ namespace TIK2
 
         private (byte, long)[] GetSymbolCountOrdered(string filepathIn, CancellationToken token)
         {
-            Log = "Creating character frequency table...";
+            var countArr = EntropyCounter.EntropyCounter.GetFrequencyArray(filepathIn, _sw,
+                x => Log = x, "Creating an encoding dictionary...", token);
 
-            BitReader br;
-            try
-            {
-                br = new BitReader(filepathIn);
-            }
-            catch
-            {
-                throw new EmptyFileException();
-            }
-
-            var countArr = new long[256];
-
-            var previousPercentage = -1;
-
-            byte curByte;
-            while (br.ReadByte(out curByte))
-            {
-                if (token.IsCancellationRequested)
-                {
-                    br.StopReading();
-                    return null;
-                }
-
-                countArr[curByte]++;
-
-                var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
-                if (percentage > previousPercentage)
-                {
-                    previousPercentage = percentage;
-                    Log = $"Creating character frequency table... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
-                }
-            }
+            Log = "";
+            if (token.IsCancellationRequested)
+                return null;
 
             return Enumerable.Range(0, 256)
                 .Where(i => countArr[i] > 0)

@@ -76,7 +76,7 @@ namespace TIK2
                     if (percentage > previousPercentage)
                     {
                         previousPercentage = percentage;
-                        Log = $"\tDone {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                        Log = $"Decoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                     }
                 }
                 decoder.FinishWriting();
