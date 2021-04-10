@@ -97,6 +97,7 @@ namespace Interface
         bool CanCreateFile(string filepath)
         {
             FileStream fs = null;
+            filepath += Guid.NewGuid().ToString() + ".temp";
             try
             {
                 using (fs = new FileStream(filepath, FileMode.Create)) { }
@@ -109,7 +110,7 @@ namespace Interface
             }
             finally
             {
-                if (fs !=null)
+                if (fs != null)
                     fs.Close();
             }
         }
