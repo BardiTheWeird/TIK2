@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Helper;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -14,44 +15,37 @@ namespace TIK2
 
         #region fields
         private FileStream _fs;
-        private byte[] _byteBuffer = new byte[1];
-
-        private char[] _bitBuffer = new char[8];
-        private int _bitIndex = 0;
+        private BitBuffer _buffer;
+        private int _writeThreshold = 20;
         #endregion
 
         #region writing
-        private void WriteByte()
+        private void MaybeWriteToFile()
         {
-            _byteBuffer[0] = Convert.ToByte(new string(_bitBuffer), 2);
-            _fs.Write(_byteBuffer, 0, 1);
+            if (_buffer.FullBytes < _writeThreshold)
+                return;
 
-            _bitIndex = 0;
+            _fs.Write(_buffer.GetFullBytesSpan);
+            _buffer.ClearAllFullBytes();
         }
 
-        public void WriteBit(char c)
+        public void WriteByte(byte num)
         {
-            _bitBuffer[_bitIndex] = c;
-            if (++_bitIndex == 8)
-                WriteByte();
-
-            BitsWritten++;
+            _buffer.AppendByte(num);
+            MaybeWriteToFile();
         }
 
-        public void WriteBits(string bits)
+        public void WriteBuffer(BitBuffer buffer)
         {
-            foreach (var bit in bits)
-                WriteBit(bit);
+            _buffer.AppendBuffer(buffer);
+            MaybeWriteToFile();
         }
 
-        public void DumpCharBuffer()
+        public void WriteTheRestOfTheBuffer()
         {
-            if (_bitIndex > 0)
-            {
-                for (int i = _bitIndex; i < 8; i++)
-                    _bitBuffer[i] = '0';
-                WriteByte();
-            }
+            _buffer.ShiftLastByteToWritableState();
+            _fs.Write(_buffer.GetByteBufferSpan);
+            _buffer.FullClear();
         }
 
         public void StopWriting() =>

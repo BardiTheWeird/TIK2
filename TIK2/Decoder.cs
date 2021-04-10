@@ -51,10 +51,9 @@ namespace TIK2
                 var br = new BitReader(filepathIn);
 
                 // reading the length of a file in BITS
-                br.ReadByte(out var lenLength); // length of a length
+                // br.ReadByte(out var lenLength); // length of a length
 
-                br.ReadBits(lenLength, out var fileLength);
-                fileLength += lenLength;
+                br.ReadBits(64, out var fileLength);
 
                 var dict = DecodeDictionary(br);
                 var decoder = new DecoderTree(dict, filepathOut);

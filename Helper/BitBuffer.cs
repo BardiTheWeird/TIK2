@@ -3,17 +3,19 @@ using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Linq;
 
 namespace Helper
 {
     public class BitBuffer
     {
         public List<byte> ByteBuffer { get; set; }
-        public Span<byte> ByteBufferSpan => CollectionsMarshal.AsSpan(ByteBuffer);
+        public Span<byte> GetByteBufferSpan => CollectionsMarshal.AsSpan(ByteBuffer);
+        public Span<byte> GetFullBytesSpan => GetByteBufferSpan.Slice(0, BitLength / 8);
         public int BitLength { get; set; }
-        public int ByteLength => ByteBuffer.Count;
+        public int FullBytes => BitLength / 8;
 
-        public void AddBit(byte bit)
+        public void AppendBit(byte bit)
         {
             if (BitLength % 8 == 0)
                 ByteBuffer.Add(bit);
@@ -23,7 +25,7 @@ namespace Helper
             BitLength++;
         }
 
-        public void AddByte(byte num)
+        public void AppendByte(byte num)
         {
             if (BitLength % 8 == 0)
             {
@@ -39,21 +41,30 @@ namespace Helper
             BitLength += 8;
         }
 
+        public void AppendPartialByte(byte num, byte len)
+        {
+            num = (byte)(num << (8 - len));
+            for (byte i = 0; i < len; i++)
+                AppendBit(num.GetBit(i));
+        }
+
         public void AppendBuffer(BitBuffer buffer)
         {
             for (int i = 0; i < buffer.ByteLength - 1; i++)
-                AddByte(buffer.ByteBuffer[i]);
+                AppendByte(buffer.ByteBuffer[i]);
 
             var lastByte = buffer.ByteBuffer[^1];
             byte lastByteLen = (byte)(buffer.BitLength % 8);
             if (lastByteLen == 0)
-                AddByte(lastByte);
+                AppendByte(lastByte);
             else
-            {
-                lastByte = (byte)(lastByte << (8 - lastByteLen));
-                for (byte i = 0; i < lastByteLen; i++)
-                    AddBit(lastByte.GetBit(i));
-            }
+                AppendPartialByte(lastByte, lastByteLen);
+        }
+
+        public void AppendLong(long num)
+        {
+            foreach (var b in BitConverter.GetBytes(num).Reverse())
+                AppendByte(b);
         }
 
         public byte this[int index]
@@ -69,19 +80,26 @@ namespace Helper
         public void ShiftLastByteToWritableState() =>
             ByteBuffer[^1] = (byte)(ByteBuffer[^1] << ((8 - (BitLength % 8)) % 8));
 
-        public bool MoveNext()
+        public void ClearAllFullBytes()
         {
-            throw new NotImplementedException();
+            if (BitLength % 8 == 0)
+            {
+                ByteBuffer.Clear();
+                BitLength = 0;
+            }
+            else
+            {
+                var temp = ByteBuffer[^1];
+                ByteBuffer.Clear();
+                BitLength = BitLength % 8;
+                ByteBuffer.Add(temp);
+            }
         }
 
-        public void Reset()
+        public void FullClear()
         {
-            throw new NotImplementedException();
-        }
-
-        public void Dispose()
-        {
-            throw new NotImplementedException();
+            ByteBuffer.Clear();
+            BitLength = 0;
         }
 
         public BitBuffer()

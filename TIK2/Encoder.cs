@@ -72,13 +72,11 @@ namespace TIK2
                         leftPartHigh = i;
                         break;
                     }
-                    codeTable[i].Code.AddBit(0);
-                    codeTable[i].CodeLength++;
+                    codeTable[i].Code.AppendBit(0);
                 }
                 for (int i = leftPartHigh; i < hi; i++)
                 {
-                    codeTable[i].Code.AddBit(1);
-                    codeTable[i].CodeLength++;
+                    codeTable[i].Code.AppendBit(1);
                 }
 
                 createEncoderDictionaryRec(lo, leftPartHigh);
@@ -89,20 +87,20 @@ namespace TIK2
             return codeTable.ToDictionary(p => p.Symbol, p => p);
         }
 
-        private static string GetEncodedDictionaryString(Dictionary<byte, SymbolEncoding> dict)
+        private static BitBuffer GetEncodedDictionaryBuffer(Dictionary<byte, SymbolEncoding> dict)
         {
-            BigInteger encoded = 0;
+            BitBuffer buffer = new BitBuffer();
 
-            sb.Append(Convert.ToString(dict.Count - 1, 2).PadLeft(8, '0'));
+            buffer.AppendByte((byte)(dict.Count - 1));
 
-            foreach (var (symbol, code) in dict)
+            foreach (var encoding in dict.Values)
             {
-                sb.Append(Convert.ToString(symbol, 2).PadLeft(8, '0'));
-                sb.Append(Convert.ToString(code.Length - 1, 2).PadLeft(8, '0'));
-                sb.Append(code);
+                buffer.AppendByte(encoding.Symbol);
+                buffer.AppendByte((byte)(encoding.Code.BitLength - 1));
+                buffer.AppendBuffer(encoding.Code);
             }
 
-            return sb.ToString();
+            return buffer;
         }
 
         public string Encode(string filepathIn, string filepathOut, CancellationToken token)
@@ -124,19 +122,23 @@ namespace TIK2
                 // dictionary entries in the format "symbol|codeLen|code"
                 // encoded file
 
-                var encodedDict = GetEncodedDictionaryString(dict);
+                var encodedDict = GetEncodedDictionaryBuffer(dict);
 
                 long fileLen = 0;
                 foreach (var entry in count)
-                    fileLen += entry.Item2 * dict[entry.Item1].Length;
+                    fileLen += entry.Item2 * dict[entry.Item1].Code.BitLength;
 
-                fileLen += 8 + encodedDict.Length;
+                fileLen += 64 + encodedDict.BitLength;
 
-                var fileLenBits = Convert.ToString(fileLen, 2);
-                var lengthLen = Convert.ToString(fileLenBits.Length, 2).PadLeft(8, '0');
+                //var fileLenBits = Convert.ToString(fileLen, 2);
+                //var lengthLen = Convert.ToString(fileLenBits.Length, 2).PadLeft(8, '0');
+
+                var buffer = new BitBuffer();
+                buffer.AppendLong(fileLen);
+                buffer.AppendBuffer(encodedDict);
 
                 var bw = new BitWriter(filepathOut);
-                bw.WriteBits(lengthLen + fileLenBits + encodedDict);
+                bw.WriteBuffer(buffer);
 
                 var previousPercentage = -1;
 
@@ -152,7 +154,7 @@ namespace TIK2
                         return string.Empty;
                     }
 
-                    bw.WriteBits(dict[curByte]);
+                    bw.WriteBuffer(dict[curByte].Code);
 
                     var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
                     if (percentage > previousPercentage)
