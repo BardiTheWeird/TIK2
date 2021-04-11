@@ -20,29 +20,6 @@ namespace TIK2
         private Stopwatch _sw = new Stopwatch();
         private string _errorDumpFile = "decoderErrorDump.txt";
 
-        private static SymbolEncoding[] DecodeDictionary(BitReader br)
-        {
-            byte curByte;
-            br.ReadByte(out curByte);
-            var dictLen = curByte + 1;
-
-            var dict = new SymbolEncoding[dictLen];
-
-            for (int i = 0; i < dictLen; i++)
-            {
-                br.ReadByte(out curByte);
-                var symbol = curByte;
-
-                br.ReadByte(out curByte);
-                var codeLen = curByte + 1;
-                
-                br.ReadBits(codeLen, out var code);
-
-                dict[i] = new SymbolEncoding(symbol, code);
-            }
-            return dict;
-        }
-
         public string Decode(string filepathIn, string filepathOut, CancellationToken token)
         {
             try
@@ -60,7 +37,7 @@ namespace TIK2
                 var totalLength = br.FileLength * 8 - (8 - finalByteLength);
 
                 var decoder = new DecoderTree(br);
-                decoder.SetFileStream(filepathOut);
+                decoder.SetOutputFileStream(filepathOut);
 
                 var readingChunk = ReadingWriting.MB;
                 var previousPercentage = -1;

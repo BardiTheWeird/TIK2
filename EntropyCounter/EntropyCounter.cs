@@ -13,8 +13,6 @@ namespace EntropyCounter
 {
     public class EntropyCounter : INotifyPropertyChanged
     {
-        static int MB = 1048576;
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         public string Log { get; set; }

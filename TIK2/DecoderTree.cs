@@ -78,15 +78,6 @@ namespace TIK2
             }
         }
 
-        public void FeedBytes(params byte[] food)
-        {
-            foreach (var num in food)
-            {
-                for (int i = 7; i >= 0; i--)
-                    FeedBit((byte)((num >> i) & 1));
-            }
-        }
-
         public BitBuffer GetEncodedTree()
         {
             var symbols = new List<byte>();
@@ -121,15 +112,13 @@ namespace TIK2
             Root = new DecoderNode();
             CurNode = Root;
 
-            //File.WriteAllText(HistoryDumpPath, "code,value\n");
-
             foreach (var entry in dict)
                 AddCode(entry);
         }
 
         public DecoderTree(IEnumerable<SymbolEncoding> dict, string outputFilepath) : this(dict)
         {
-            SetFileStream(outputFilepath);
+            SetOutputFileStream(outputFilepath);
         }
 
         /// <summary>
@@ -189,7 +178,7 @@ namespace TIK2
             }
         }
 
-        public void SetFileStream(string outputFilepath)
+        public void SetOutputFileStream(string outputFilepath)
         {
             if (CurrentFileStream != null)
                 CurrentFileStream.Close();
@@ -206,10 +195,7 @@ namespace TIK2
         }
 
 
-        public void StopWriting()
-        {
+        public void StopWriting() =>
             CurrentFileStream.Close();
-            //DumpCurrentHistory();
-        }
     }
 }

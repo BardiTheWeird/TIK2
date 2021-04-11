@@ -89,6 +89,12 @@ namespace Interface
         public ICommand Execute { get; set; }
 
         private Action _cancelAction { get; set; }
+        public bool IsExecuting { get; set; }
+        private void RaiseCanExecuteChanged()
+        {
+            (Cancel as RelayCommand)?.UpdateCanExecuteState();
+            (Execute as RelayCommand)?.UpdateCanExecuteState();
+        }
 
         public TIK2.Encoder Encoder { get; set; } = new TIK2.Encoder();
         public TIK2.Decoder Decoder { get; set; } = new TIK2.Decoder();
@@ -175,6 +181,8 @@ namespace Interface
                         if (!string.IsNullOrEmpty((string)e.Result))
                             OutputText += e.Result + "\n";
                         _cancelAction = null;
+                        IsExecuting = false;
+                        RaiseCanExecuteChanged();
                     };
 
                     bgWorker.RunWorkerAsync();
@@ -203,6 +211,8 @@ namespace Interface
                         if (!string.IsNullOrEmpty((string)e.Result))
                             OutputText += e.Result + "\n";
                         _cancelAction = null;
+                        IsExecuting = false;
+                        RaiseCanExecuteChanged();
                     };
 
                     bgWorker.RunWorkerAsync();
@@ -234,6 +244,8 @@ namespace Interface
                             OutputText += $"{Path.GetFileName(FilepathIn)} entropy is {res.Item1:.00000}. " +
                             $"Time elapsed: {res.Item2/1000f:.00}s\n";
                         _cancelAction = null;
+                        IsExecuting = false;
+                        RaiseCanExecuteChanged();
                     };
 
                     bgWorker.RunWorkerAsync();
@@ -255,8 +267,12 @@ namespace Interface
                 if (openFileDialog.ShowDialog() == true)
                     FilepathIn = openFileDialog.FileName;
             });
-            Execute = new RelayCommand(x => ChosenOperation.Execute(x), 
-                x => ChosenOperation != null && ChosenOperation.CanExecute(x));
+            Execute = new RelayCommand(x =>
+            {
+                IsExecuting = true;
+                ChosenOperation.Execute(x);
+            },
+                x => ChosenOperation != null && !IsExecuting && ChosenOperation.CanExecute(x));
             Cancel = new RelayCommand(x => _cancelAction(), x => _cancelAction != null);
         }
     }

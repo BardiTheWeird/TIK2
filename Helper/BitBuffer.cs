@@ -15,6 +15,7 @@ namespace Helper
         public int BitLength { get; set; }
         public int FullBytes => BitLength / 8;
 
+        #region appendStuff
         public void AppendBit(byte bit)
         {
             if (BitLength % 8 == 0)
@@ -63,12 +64,7 @@ namespace Helper
             else
                 AppendPartialByte(lastByte, lastByteLen);
         }
-
-        public void AppendLong(long num)
-        {
-            foreach (var b in BitConverter.GetBytes(num).Reverse())
-                AppendByte(b);
-        }
+        #endregion
 
         public byte PopBit()
         {
@@ -130,20 +126,6 @@ namespace Helper
         {
             ByteBuffer.Clear();
             BitLength = 0;
-        }
-
-        public long ToLong(int start, int byteCount)
-        {
-            if (ByteBuffer.Count - start > byteCount || byteCount > 8)
-                throw new ArgumentException();
-
-            long output = 0;
-            for (int i = 0; i < byteCount; i++)
-            {
-                var offsettedIndex = i + start;
-                output += ByteBuffer[offsettedIndex] << (8 * (byteCount - i - 1));
-            }
-            return output;
         }
 
         public override string ToString()

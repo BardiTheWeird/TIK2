@@ -28,7 +28,7 @@ namespace TIK2
 
         private (byte, long)[] GetSymbolCountOrdered(string filepathIn, CancellationToken token)
         {
-            var countArr = Helper.ReadingWriting.GetFrequencyArray(filepathIn, _sw,
+            var countArr = ReadingWriting.GetFrequencyArray(filepathIn, _sw,
                 x => Log = x, "Creating an encoding dictionary...", token);
 
             Log = "";
@@ -87,22 +87,6 @@ namespace TIK2
             return codeTable.ToDictionary(p => p.Symbol, p => p);
         }
 
-        private static BitBuffer GetEncodedDictionaryBuffer(Dictionary<byte, SymbolEncoding> dict)
-        {
-            BitBuffer buffer = new BitBuffer();
-
-            buffer.AppendByte((byte)(dict.Count - 1));
-
-            foreach (var encoding in dict.Values)
-            {
-                buffer.AppendByte(encoding.Symbol);
-                buffer.AppendByte((byte)(encoding.Code.BitLength - 1));
-                buffer.AppendBuffer(encoding.Code);
-            }
-
-            return buffer;
-        }
-
         public string Encode(string filepathIn, string filepathOut, CancellationToken token)
         {
             try
@@ -142,7 +126,6 @@ namespace TIK2
 
                 var previousPercentage = -1;
 
-                //var br = new BitReader(filepathIn);
                 var fs = new FileStream(filepathIn, FileMode.Open);
                 var chunkSize = ReadingWriting.MB;
                 var readBuffer = new byte[chunkSize];

@@ -9,8 +9,6 @@ namespace TIK2
 {
     class Program
     {
-        private static readonly int MB = 1024 * 1024;
-
         static void PointOutTheDifferences(string file1, string file2)
         {
             var fs1 = new FileStream(file1, FileMode.Open);
@@ -33,7 +31,7 @@ namespace TIK2
 
             var len = Math.Min(fs1.Length, fs2.Length);
 
-            Console.WriteLine($"Comparing... File size: {len / (float)MB:.00}MB");
+            Console.WriteLine($"Comparing... File size: {len / (float)Helper.ReadingWriting.MB:.00}MB");
             var previousPercentage = -1;
 
             for (int i = 0; i < Math.Min(fs1.Length, fs2.Length); i++)
