@@ -114,8 +114,6 @@ namespace TIK2
                     return string.Empty;
 
                 var dict = GetEncodingDictionary(count);
-    //            File.WriteAllText("encoded_dict.txt", string.Join('\n',
-    //dict.Select(e => $"{e.Value.Symbol},{e.Value.Code}")));
 
                 // the file format is as follows:
                 // 3 bits - the amount of bits to read in the final byte
@@ -123,7 +121,8 @@ namespace TIK2
                 // dictionary entries in the format "symbol|codeLen|code"
                 // encoded file
 
-                var encodedDict = GetEncodedDictionaryBuffer(dict);
+                var tree = new DecoderTree(dict.Values);
+                var encodedDict = tree.GetEncodedTree();
 
                 long fileLen = 0;
                 foreach (var entry in count)
@@ -133,8 +132,6 @@ namespace TIK2
 
                 var finalByteLen = (byte)(fileLen % 8);
 
-                //var fileLenBits = Convert.ToString(fileLen, 2);
-                //var lengthLen = Convert.ToString(fileLenBits.Length, 2).PadLeft(8, '0');
 
                 var buffer = new BitBuffer();
                 buffer.AppendPartialByte(finalByteLen, 3);

@@ -50,6 +50,9 @@ namespace Helper
 
         public void AppendBuffer(BitBuffer buffer)
         {
+            if (buffer.BitLength < 1)
+                return;
+
             for (int i = 0; i < buffer.ByteBuffer.Count - 1; i++)
                 AppendByte(buffer.ByteBuffer[i]);
 
@@ -65,6 +68,20 @@ namespace Helper
         {
             foreach (var b in BitConverter.GetBytes(num).Reverse())
                 AppendByte(b);
+        }
+
+        public byte PopBit()
+        {
+            if (BitLength < 1)
+                throw new ArgumentException("No more popping is available at the time");
+
+            var output = (byte)(ByteBuffer[^1] & 1);
+            ByteBuffer[^1] = (byte)(ByteBuffer[^1] >> 1);
+            BitLength--;
+            if (BitLength % 8 == 0)
+                ByteBuffer.RemoveAt(ByteBuffer.Count - 1);
+
+            return output;
         }
 
         public byte this[int index]

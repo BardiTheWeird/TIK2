@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Helper;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -86,6 +87,35 @@ namespace TIK2
             }
         }
 
+        public BitBuffer GetEncodedTree()
+        {
+            var symbols = new List<byte>();
+            var buffer = new BitBuffer();
+
+            void dfs(DecoderNode node)
+            {
+                if (node.Left != null)
+                {
+                    buffer.AppendBit(0); // move down
+                    dfs(node.Left);
+                }
+                if (node.Right != null)
+                {
+                    buffer.AppendBit(0); // move down
+                    dfs(node.Right);
+                }
+
+                if (node.Value != null)
+                    symbols.Add((byte)node.Value);
+
+                buffer.AppendBit(1); // move up
+            }
+
+            dfs(Root);
+            symbols.ForEach(b => buffer.AppendByte(b));
+            return buffer;
+        }
+
         public DecoderTree(IEnumerable<SymbolEncoding> dict)
         {
             Root = new DecoderNode();
@@ -100,6 +130,63 @@ namespace TIK2
         public DecoderTree(IEnumerable<SymbolEncoding> dict, string outputFilepath) : this(dict)
         {
             SetFileStream(outputFilepath);
+        }
+
+        /// <summary>
+        /// Decode the tree using some of that sweet-sweet magic
+        /// </summary>
+        /// <param name="br"></param>
+        public DecoderTree(BitReader br)
+        {
+            Root = new DecoderNode();
+            CurNode = Root;
+            var valueNodes = new List<DecoderNode>();
+
+            var nodeStack = new Stack<DecoderNode>();
+            nodeStack.Push(Root);
+
+            byte nextMove;
+            byte prevMove = 1; // up. Equals to 1 to work on empty dicts
+
+            while (nodeStack.Count > 0)
+            {
+                br.ReadBit(out nextMove);
+                var curNode = nodeStack.Peek();
+
+                if (nextMove == 0) // down
+                {
+                    DecoderNode nextNode;
+                    if (curNode.Left == null)
+                    {
+                        curNode.Left = new DecoderNode();
+                        nextNode = curNode.Left;
+                    }
+                    else if (curNode.Right == null)
+                    {
+                        curNode.Right = new DecoderNode();
+                        nextNode = curNode.Right;
+                    }
+                    else
+                        throw new Exception("Tried going down on the node that has both children");
+
+                    nodeStack.Push(nextNode);
+                }
+                else // up
+                {
+                    nodeStack.Pop();
+                    if (prevMove == 0) // down
+                        valueNodes.Add(curNode);
+                }
+
+                prevMove = nextMove;
+            }
+
+            byte value;
+            for (int i = 0; i < valueNodes.Count; i++)
+            {
+                br.ReadByte(out value);
+                valueNodes[i].Value = value;
+            }
         }
 
         public void SetFileStream(string outputFilepath)
