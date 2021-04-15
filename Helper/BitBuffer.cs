@@ -142,5 +142,10 @@ namespace Helper
         {
             ByteBuffer = new List<byte>(4);
         }
+
+        public BitBuffer(BitBuffer buffer) : this()
+        {
+            AppendBuffer(buffer);
+        }
     }
 }

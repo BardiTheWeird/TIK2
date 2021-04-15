@@ -228,7 +228,7 @@ namespace Interface
                             File.Delete(FilepathOut);
                     };
                 }, 
-                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut)),
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && ChosenEncoding != null),
                 new OperationEntry(OperationType.Decode, "Decode", x => 
                 {
                     var bgWorker = new BackgroundWorker();
@@ -307,7 +307,7 @@ namespace Interface
                 IsExecuting = true;
                 ChosenOperation.Execute(x);
             },
-                x => ChosenOperation != null && ChosenEncoding != null && !IsExecuting && ChosenOperation.CanExecute(x));
+                x => ChosenOperation != null && !IsExecuting && ChosenOperation.CanExecute(x));
             Cancel = new RelayCommand(x => _cancelAction(), x => _cancelAction != null);
         }
     }

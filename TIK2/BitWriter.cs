@@ -43,9 +43,12 @@ namespace TIK2
 
         public void WriteTheRestOfTheBuffer()
         {
-            _buffer.ShiftLastByteToWritableState();
-            _fs.Write(_buffer.ByteBufferSpan);
-            _buffer.FullClear();
+            if (_buffer.BitLength > 0)
+            {
+                _buffer.ShiftLastByteToWritableState();
+                _fs.Write(_buffer.ByteBufferSpan);
+                _buffer.FullClear();
+            }
         }
 
         public void StopWriting() =>

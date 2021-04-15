@@ -107,6 +107,45 @@ namespace TIK2
             return buffer;
         }
 
+        public Dictionary<byte, SymbolEncoding> GetEncodingDictionary()
+        {
+            var buffer = new BitBuffer();
+            var dict = new Dictionary<byte, SymbolEncoding>();
+
+            void dfs(DecoderNode node)
+            {
+                if (node.Left != null)
+                {
+                    buffer.AppendBit(0); // move left
+                    dfs(node.Left);
+                }
+                if (node.Right != null)
+                {
+                    buffer.AppendBit(1); // move right
+                    dfs(node.Right);
+                }
+
+                if (node.Value != null)
+                {
+                    var symbol = (byte)node.Value;
+                    var encoding = new SymbolEncoding(symbol, new BitBuffer(buffer));
+                    dict.Add(symbol, encoding);
+                }
+
+                if (buffer.BitLength > 0)
+                    buffer.PopBit(); // move up
+            }
+
+            dfs(Root);
+            return dict;
+        }
+
+        public DecoderTree(DecoderNode root)
+        {
+            Root = root;
+            CurNode = Root;
+        }
+
         public DecoderTree(IEnumerable<SymbolEncoding> dict)
         {
             Root = new DecoderNode();

@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace Helper
 {
-    public class MinHeap<T>
+    public class Heap<T>
     {
         private readonly T[] _elements;
-        private int _size;
+        public int Size { get; set; }
 
         private Func<T, T, bool> _comparer;
 
-        public MinHeap(int size, Func<T, T, bool> comparer)
+        public Heap(int size, Func<T, T, bool> comparer)
         {
             _elements = new T[size];
             _comparer = comparer;
@@ -23,8 +23,8 @@ namespace Helper
         private int GetRightChildIndex(int elementIndex) => 2 * elementIndex + 2;
         private int GetParentIndex(int elementIndex) => (elementIndex - 1) / 2;
 
-        private bool HasLeftChild(int elementIndex) => GetLeftChildIndex(elementIndex) < _size;
-        private bool HasRightChild(int elementIndex) => GetRightChildIndex(elementIndex) < _size;
+        private bool HasLeftChild(int elementIndex) => GetLeftChildIndex(elementIndex) < Size;
+        private bool HasRightChild(int elementIndex) => GetRightChildIndex(elementIndex) < Size;
         private bool IsRoot(int elementIndex) => elementIndex == 0;
 
         private T GetLeftChild(int elementIndex) => _elements[GetLeftChildIndex(elementIndex)];
@@ -38,11 +38,11 @@ namespace Helper
             _elements[secondIndex] = temp;
         }
 
-        public bool IsEmpty() => _size == 0;
+        public bool IsEmpty() => Size == 0;
 
         public T Peek()
         {
-            if (_size == 0)
+            if (Size == 0)
                 throw new IndexOutOfRangeException();
 
             return _elements[0];
@@ -50,12 +50,12 @@ namespace Helper
 
         public T Pop()
         {
-            if (_size == 0)
+            if (Size == 0)
                 throw new IndexOutOfRangeException();
 
             var result = _elements[0];
-            _elements[0] = _elements[_size - 1];
-            _size--;
+            _elements[0] = _elements[Size - 1];
+            Size--;
 
             ReCalculateDown();
 
@@ -64,11 +64,11 @@ namespace Helper
 
         public void Add(T element)
         {
-            if (_size == _elements.Length)
+            if (Size == _elements.Length)
                 throw new IndexOutOfRangeException();
 
-            _elements[_size] = element;
-            _size++;
+            _elements[Size] = element;
+            Size++;
 
             ReCalculateUp();
         }
@@ -92,7 +92,7 @@ namespace Helper
 
         private void ReCalculateUp()
         {
-            var index = _size - 1;
+            var index = Size - 1;
             while (!IsRoot(index) && _comparer(_elements[index], GetParent(index)))
             {
                 var parentIndex = GetParentIndex(index);

@@ -115,6 +115,7 @@ namespace TIK2
                 }
                 bw.WriteTheRestOfTheBuffer();
                 bw.StopWriting();
+                fs.Close();
 
                 Log = "";
                 var outString = $"Finished encoding. Encoded file: {Path.GetFileName(filepathOut)}. " +
