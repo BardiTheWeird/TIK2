@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
+using TIK2;
 
 namespace Interface
 {
@@ -43,6 +44,18 @@ namespace Interface
         }
     }
 
+    public class EncodingEntry
+    {
+        public EncodingType EncodingType { get; set; }
+        public string VisibleName { get; set; }
+
+        public EncodingEntry(EncodingType encodingType, string visibleName)
+        {
+            EncodingType = encodingType;
+            VisibleName = visibleName;
+        }
+    }
+
     class MainWindowVM : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -68,7 +81,6 @@ namespace Interface
         public string OutputText { get; set; }
 
         public ObservableCollection<OperationEntry> OperationsChoice { get; set; }
-
         OperationEntry _chosenOperation;
         public OperationEntry ChosenOperation 
         { 
@@ -82,6 +94,22 @@ namespace Interface
 
                 SetFilepathOut();
             } 
+        }
+
+        public ObservableCollection<EncodingEntry> EncodingChoice { get; set; }
+        EncodingEntry _chosenEncoding;
+        public EncodingEntry ChosenEncoding
+        {
+            get => _chosenEncoding;
+            set
+            {
+                if (value == _chosenEncoding)
+                    return;
+                _chosenEncoding = value;
+                RaisePropertyChanged();
+
+                SetFilepathOut();
+            }
         }
 
         public ICommand ChooseFile { get; set; }
@@ -175,7 +203,8 @@ namespace Interface
                     var bgWorker = new BackgroundWorker();
 
                     var tokenSource = new CancellationTokenSource();
-                    bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(FilepathIn, FilepathOut, tokenSource.Token);
+                    bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(FilepathIn, FilepathOut, 
+                        ChosenEncoding.EncodingType, tokenSource.Token);
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
                         if (!string.IsNullOrEmpty((string)e.Result))
@@ -260,6 +289,12 @@ namespace Interface
                     x => File.Exists(FilepathIn)),
             };
 
+            EncodingChoice = new ObservableCollection<EncodingEntry>()
+            {
+                new EncodingEntry(EncodingType.ShennonFano, "Shennon-Fano"),
+                new EncodingEntry(EncodingType.Huffman, "Huffman")
+            };
+
             ChooseFile = new RelayCommand(x =>
             {
                 var openFileDialog = new OpenFileDialog();
@@ -272,7 +307,7 @@ namespace Interface
                 IsExecuting = true;
                 ChosenOperation.Execute(x);
             },
-                x => ChosenOperation != null && !IsExecuting && ChosenOperation.CanExecute(x));
+                x => ChosenOperation != null && ChosenEncoding != null && !IsExecuting && ChosenOperation.CanExecute(x));
             Cancel = new RelayCommand(x => _cancelAction(), x => _cancelAction != null);
         }
     }
