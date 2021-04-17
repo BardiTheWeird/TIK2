@@ -23,7 +23,8 @@ namespace EntropyCounter
         {
             var sum = count.Sum();
 
-            return count.Select(x => { 
+            return count.Where(x => x > 0)
+                .Select(x => { 
                 var p = x / (double)sum; 
                 return -1 * p * Math.Log2(p); 
             }).Sum();
@@ -42,6 +43,11 @@ namespace EntropyCounter
             var count = Helper.ReadingWriting.GetFrequencyArray(filepath, _sw, x => Log = x, "Calculating entropy...", token);
 
             Log = "";
+
+            File.WriteAllText("count.txt", 
+                string.Join("\n", Enumerable.Range(0, 256)
+                .Select(i => $"{i} -> {count[i]}")));
+
             msElapsed = _sw.ElapsedMilliseconds;
             _sw.Reset();
 
