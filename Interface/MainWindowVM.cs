@@ -311,7 +311,13 @@ namespace Interface
             },
                 x => ChosenOperation != null && !IsExecuting && ChosenOperation.CanExecute(x));
             Cancel = new RelayCommand(x => _cancelAction(), x => _cancelAction != null);
-            OpenOutputDirectory = new RelayCommand(x => Process.Start(Path.GetDirectoryName(FilepathOut)), 
+            OpenOutputDirectory = new RelayCommand(x => 
+            {
+                var directory = Path.GetDirectoryName(FilepathOut);
+                Debug.WriteLine($"Directory: {directory}");
+                Process.Start(@"explorer.exe", directory);
+                //Process.Start(@"cmd.exe"); 
+            }, 
                 x => Directory.Exists(Path.GetDirectoryName(FilepathOut)));
         }
     }

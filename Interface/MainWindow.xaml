@@ -40,7 +40,7 @@
                     Orientation="Horizontal">
             <Button Command="{Binding Execute}">Execute</Button>
             <Button Command="{Binding Cancel}">Cancel</Button>
-            <!--<Button Command="{Binding OpenOutputDirectory}">Open Output Directory</Button>-->
+            <Button Command="{Binding OpenOutputDirectory}">Open Output Directory</Button>
         </StackPanel>
 
         <Button Grid.Row="0" Command="{Binding ChooseFile}">Choose file</Button>
