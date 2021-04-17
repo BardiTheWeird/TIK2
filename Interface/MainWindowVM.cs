@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -115,6 +116,7 @@ namespace Interface
         public ICommand ChooseFile { get; set; }
         public ICommand Cancel { get; set; }
         public ICommand Execute { get; set; }
+        public ICommand OpenOutputDirectory { get; set; }
 
         private Action _cancelAction { get; set; }
         public bool IsExecuting { get; set; }
@@ -309,6 +311,8 @@ namespace Interface
             },
                 x => ChosenOperation != null && !IsExecuting && ChosenOperation.CanExecute(x));
             Cancel = new RelayCommand(x => _cancelAction(), x => _cancelAction != null);
+            OpenOutputDirectory = new RelayCommand(x => Process.Start(Path.GetDirectoryName(FilepathOut)), 
+                x => Directory.Exists(Path.GetDirectoryName(FilepathOut)));
         }
     }
 

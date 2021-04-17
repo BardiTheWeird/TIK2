@@ -118,8 +118,9 @@ namespace TIK2
                 fs.Close();
 
                 Log = "";
-                var outString = $"Finished encoding. Encoded file: {Path.GetFileName(filepathOut)}. " +
-                    $"Time elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                var outString = $"Finished encoding. Encoded file: {Path.GetFileName(filepathOut)}.\n" +
+                    $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s\n" +
+                    $"\tCompression ratio: {len / ((double)bw.BytesWritten)}";
                 _sw.Reset();
 
                 return outString;

@@ -72,8 +72,8 @@ namespace TIK2
 
                 _sw.Stop();
                 Log = "";
-                var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}. " +
-                    $"Time elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}.\n" +
+                    $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                 _sw.Reset();
                 return res;
             }

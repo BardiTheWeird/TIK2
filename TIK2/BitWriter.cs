@@ -11,6 +11,7 @@ namespace TIK2
         #region properties
         public string Filepath { get; set; }
         public long BitsWritten { get; set; } = 0;
+        public long BytesWritten => (long)Math.Ceiling(BitsWritten / 8d);
         #endregion
 
         #region fields
@@ -38,6 +39,7 @@ namespace TIK2
         public void WriteBuffer(BitBuffer buffer)
         {
             _buffer.AppendBuffer(buffer);
+            BitsWritten += buffer.BitLength;
             MaybeWriteToFile();
         }
 
