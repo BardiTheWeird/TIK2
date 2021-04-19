@@ -22,12 +22,14 @@ namespace TIK2
 
         public string Decode(string filepathIn, string filepathOut, CancellationToken token)
         {
+            DecoderTree decoder = null;
+            BitReader br = null;
             try
             {
                 _sw.Start();
 
                 Log = "Started decoding...";
-                var br = new BitReader(filepathIn);
+                br = new BitReader(filepathIn);
 
                 br.ReadBits(3, out var finalByteLengthBuffer);
                 var finalByteLength = finalByteLengthBuffer.ByteBuffer[0];
@@ -36,7 +38,7 @@ namespace TIK2
 
                 var totalLength = br.FileLength * 8 - (8 - finalByteLength);
 
-                var decoder = new DecoderTree(br);
+                decoder = new DecoderTree(br);
                 decoder.SetOutputFileStream(filepathOut);
 
                 var readingChunk = ReadingWriting.MB;
@@ -84,6 +86,15 @@ namespace TIK2
                 File.WriteAllText(_errorDumpFile, e.Message);
 
                 return $"Decoding failed. Details are in the encoder error dump file";
+            }
+            finally
+            {
+                try
+                {
+                    decoder.StopWriting();
+                    br.StopReading();
+                }
+                catch { }
             }
         }
     }
