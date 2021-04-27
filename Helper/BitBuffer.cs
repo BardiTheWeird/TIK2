@@ -97,6 +97,62 @@ namespace Helper
             }
         }
 
+        public IEnumerable<(int, byte)> Enumerate() =>
+            Enumerable.Range(0, BitLength)
+                .Select(i => (i, this[i]));
+
+        public void InsertBit(byte bit, long position)
+        {
+            if (position < 0)
+                throw new ArgumentOutOfRangeException();
+
+            if (position >= BitLength)
+            {
+                AppendBit(bit);
+                return;
+            }
+
+            if (BitLength % 8 == 0)
+                ByteBuffer.Add(0);
+
+            var byteIndex = (int)(position / 8);
+            var bitPosition = (int)(position % 8);
+
+            if (byteIndex == ByteBuffer.Count - 1)
+            {
+                var bitsLastByte = BitLength % 8;
+                var byteOld = ByteBuffer[byteIndex];
+                var left = (byteOld >> (bitsLastByte - bitPosition)) << (bitsLastByte - bitPosition + 1);
+                var right = ((byteOld << (8 - bitsLastByte + bitPosition)) & 0xff) >> (8 - bitsLastByte + bitPosition);
+                var insert = bit << (bitsLastByte - bitPosition);
+                ByteBuffer[byteIndex] = (byte)(left + right + insert);
+            }
+            else 
+            {
+                var byteOld = ByteBuffer[byteIndex];
+                var left = (byteOld >> (8 - bitPosition)) << (8 - bitPosition);
+                var right = ((byteOld << (8 - bitPosition)) & 0xff) >> (8 - bitPosition + 1);
+                var carry = byteOld & 1;
+                var insert = (bit << (8 - bitPosition - 1)) & 0xff;
+
+                ByteBuffer[byteIndex] = (byte)(left + right + insert);
+
+                while (++byteIndex < BitLength / 8 - 1)
+                {
+                    byteOld = ByteBuffer[byteIndex];
+                    var byteNew = (byteOld >> 1) + (carry << 7);
+                    carry = byteOld & 1;
+                    ByteBuffer[byteIndex] = (byte)byteNew;
+                }
+
+                byteOld = ByteBuffer[byteIndex];
+                ByteBuffer[byteIndex] = (byte)(byteOld + (carry << (BitLength % 8)));
+            }
+
+            BitLength++;
+        }
+
+        #region writingMisc
         public void ShiftLastByteToWritableState() =>
             ByteBuffer[^1] = (byte)(ByteBuffer[^1] << ((8 - (BitLength % 8)) % 8));
 
@@ -127,6 +183,7 @@ namespace Helper
             ByteBuffer.Clear();
             BitLength = 0;
         }
+        #endregion
 
         public override string ToString()
         {
@@ -138,6 +195,7 @@ namespace Helper
                 .Append(Convert.ToString(ByteBuffer[^1], 2).PadLeft(BitLength % 8, '0')));
         }
 
+        #region ctor
         public BitBuffer()
         {
             ByteBuffer = new List<byte>(4);
@@ -147,5 +205,6 @@ namespace Helper
         {
             AppendBuffer(buffer);
         }
+        #endregion
     }
 }
