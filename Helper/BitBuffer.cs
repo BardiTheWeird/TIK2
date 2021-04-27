@@ -95,6 +95,32 @@ namespace Helper
 
                 return ByteBuffer[byteIndex].GetBit(bitOffset);
             }
+            set
+            {
+                if (value > 1)
+                    throw new ArgumentException($"expected bit, got {value}");
+
+                if (index < 0 || index >= BitLength)
+                    throw new IndexOutOfRangeException();
+
+                var byteIndex = index / 8;
+                var bitOffset = (byte)(index % 8);
+
+
+                var oldByte = ByteBuffer[byteIndex];
+                if (byteIndex == ByteBuffer.Count - 1 && BitLength % 8 != 0)
+                {
+                    var lastByteLength = BitLength % 8;
+                    oldByte = (byte)(oldByte & Masks.RemovalMasks[bitOffset + 8 - lastByteLength]);
+                    oldByte += (byte)(value << (7 - (8 - lastByteLength) - bitOffset));
+                }
+                else
+                {
+                    oldByte = (byte)(oldByte & Masks.RemovalMasks[bitOffset]);
+                    oldByte += (byte)(value << (7 - bitOffset));
+                }
+                ByteBuffer[byteIndex] = oldByte;
+            }
         }
 
         public IEnumerable<(int, byte)> Enumerate() =>
