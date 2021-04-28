@@ -25,15 +25,23 @@ namespace TIK2
 
             var parityBitsNum = (int)Math.Log2(finalLength);
 
-            // setting up the parity bits
-            message.InsertBit(0, 0); // 0th
-            foreach (var position in Enumerable.Range(0, parityBitsNum).Select(i => (long)Math.Pow(2, i)))
-                message.InsertBit(0, position); // (2^i)th
+            // setting up the parity bits (as 0)
+            var newBufferArr = new byte[finalLength];
+            var infoCoordinates = Enumerable.Range(0, finalLength)
+                .Where(i => i != 0 && !HelperMath.IsPowerOfTwo(i));
+
+            var threaded = infoCoordinates.Zip(message.Enumerate(), (i, enumerated) => (i, enumerated.Item2));
+            foreach (var (i, bit) in threaded)
+                newBufferArr[i] = bit;
+
+            message = new BitBuffer();
+            foreach (var bit in newBufferArr)
+                message.AppendBit(bit);
 
             var xorRes = message.Enumerate()
                 .Where(x => x.Item2 == 1)
                 .Select(x => x.Item1)
-                .Aggregate((x, y) => x ^ y);
+                .Aggregate(0, (x, y) => x ^ y);
 
             for (int i = 0; i < parityBitsNum; i++)
             {

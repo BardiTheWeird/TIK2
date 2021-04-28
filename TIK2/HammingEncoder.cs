@@ -1,6 +1,7 @@
 ﻿using Helper;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,11 +11,13 @@ using System.Threading.Tasks;
 
 namespace TIK2
 {
-    public class HammingEncoder
+    public class HammingEncoder : INotifyPropertyChanged
     {
         public string Log { get; set; }
         private Stopwatch _sw = new Stopwatch();
         private string _errorDumpFile = "hammingEncoderErrorDump.txt";
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public string Encode(string filepathIn, string filepathOut, int blockSize, CancellationToken token)
         {
@@ -63,7 +66,7 @@ namespace TIK2
                         return string.Empty;
                     }
 
-                    var percentage = (int)(Math.Round(i / (float)len, 2) * 100);
+                    var percentage = (int)(Math.Round(i / 8 / (float)len, 2) * 100);
                     if (percentage > previousPercentage)
                     {
                         previousPercentage = percentage;

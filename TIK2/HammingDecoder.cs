@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,11 +11,13 @@ using Helper;
 
 namespace TIK2
 {
-    public class HammingDecoder
+    public class HammingDecoder : INotifyPropertyChanged
     {
         public string Log { get; set; }
         private Stopwatch _sw = new Stopwatch();
         private string _errorDumpFile = "hammingDecoderErrorDump.txt";
+
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public string Decode(string filepathIn, string filepathOut, int blockSize, CancellationToken token)
         {
