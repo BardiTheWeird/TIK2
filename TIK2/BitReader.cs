@@ -80,7 +80,7 @@ namespace TIK2
             _byteChunkSize = ReadingWriting.MB;
             _bitIndex = _bitChunkSize;
             _bitBuffer = new BitBuffer();
-            _bitBuffer.FillWithZeroes(_byteChunkSize);
+            _bitBuffer.FillWithZeroesBytes(_byteChunkSize);
         }
         #endregion
     }

@@ -182,10 +182,23 @@ namespace Helper
         public void ShiftLastByteToWritableState() =>
             ByteBuffer[^1] = (byte)(ByteBuffer[^1] << ((8 - (BitLength % 8)) % 8));
 
-        public void FillWithZeroes(int count)
+        public void FillWithZeroesBytes(int count)
         {
+            if (count <= 0)
+                throw new ArgumentException();
+
             ByteBuffer = Enumerable.Repeat<byte>(0, count).ToList();
             BitLength = count * 8;
+        }
+
+        public void FillWithZeroesBits(int count)
+        {
+            if (count <= 0)
+                throw new ArgumentException();
+
+            var bytesNum = (int)Math.Ceiling(count / 8f);
+            ByteBuffer = Enumerable.Repeat<byte>(0, bytesNum).ToList();
+            BitLength = count;
         }
         
         public void ClearAllFullBytes()
