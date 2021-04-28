@@ -39,7 +39,7 @@ namespace Helper
                     return null;
                 }
 
-                var percentage = (int)(HelperMath.Round(i / (float)len, 2) * 100);
+                var percentage = (int)(Math.Round(i / (float)len, 2) * 100);
                 if (percentage > previousPercentage)
                 {
                     previousPercentage = percentage;
@@ -48,7 +48,7 @@ namespace Helper
 
                 fs.Read(buffer, 0, chunkSize);
 
-                var higherLimit = HelperMath.Min(chunkSize, len - i);
+                var higherLimit = Math.Min(chunkSize, len - i);
                 Parallel.For(0, higherLimit, j =>
                 {
                     count.AddOrUpdate(buffer[j], 1, (key, old) => old + 1);
