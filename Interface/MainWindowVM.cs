@@ -200,7 +200,7 @@ namespace Interface
                     
                     var nameNoExtension = Path.GetFileNameWithoutExtension(name);
                     var extension = Path.GetExtension(name);
-                    if (extension != ".encoded" || extension != ".hamming")
+                    if (extension != ".encoded" && extension != ".hamming")
                     {
                         FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
                         return;
