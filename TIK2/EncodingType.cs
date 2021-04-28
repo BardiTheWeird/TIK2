@@ -10,5 +10,6 @@ namespace TIK2
     {
         ShennonFano,
         Huffman,
+        Hamming,
     }
 }

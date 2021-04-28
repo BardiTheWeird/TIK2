@@ -149,7 +149,7 @@ namespace Helper
                 var bitsLastByte = BitLength % 8;
                 var byteOld = ByteBuffer[byteIndex];
                 var left = (byteOld >> (bitsLastByte - bitPosition)) << (bitsLastByte - bitPosition + 1);
-                var right = ((byteOld << (8 - bitsLastByte + bitPosition)) & 0xff) >> (8 - bitsLastByte + bitPosition);
+                var right = byteOld & Masks.RightMasks[bitPosition + 8 - bitsLastByte];
                 var insert = bit << (bitsLastByte - bitPosition);
                 ByteBuffer[byteIndex] = (byte)(left + right + insert);
             }
@@ -157,7 +157,7 @@ namespace Helper
             {
                 var byteOld = ByteBuffer[byteIndex];
                 var left = (byteOld >> (8 - bitPosition)) << (8 - bitPosition);
-                var right = ((byteOld << (8 - bitPosition)) & 0xff) >> (8 - bitPosition + 1);
+                var right = (byteOld & Masks.RightMasks[bitPosition]) >> 1;
                 var carry = byteOld & 1;
                 var insert = (bit << (8 - bitPosition - 1)) & 0xff;
 

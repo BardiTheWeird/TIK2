@@ -64,10 +64,10 @@ namespace Interface
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
         string _filepathIn;
-        public string FilepathIn 
-        { 
+        public string FilepathIn
+        {
             get => _filepathIn;
-            set 
+            set
             {
                 if (value == _filepathIn)
                     return;
@@ -83,8 +83,8 @@ namespace Interface
 
         public ObservableCollection<OperationEntry> OperationsChoice { get; set; }
         OperationEntry _chosenOperation;
-        public OperationEntry ChosenOperation 
-        { 
+        public OperationEntry ChosenOperation
+        {
             get => _chosenOperation;
             set
             {
@@ -94,7 +94,7 @@ namespace Interface
                 RaisePropertyChanged();
 
                 SetFilepathOut();
-            } 
+            }
         }
 
         public ObservableCollection<EncodingEntry> EncodingChoice { get; set; }
@@ -129,6 +129,24 @@ namespace Interface
         public TIK2.Encoder Encoder { get; set; } = new TIK2.Encoder();
         public TIK2.Decoder Decoder { get; set; } = new TIK2.Decoder();
         public EntropyCounter.EntropyCounter EntropyCounter { get; set; } = new EntropyCounter.EntropyCounter();
+        public HammingEncoder HammingEncoder { get; set; } = new HammingEncoder();
+        public HammingDecoder HammingDecoder { get; set; } = new HammingDecoder();
+        public int HammingBlockSize()
+        {
+            switch (Array.IndexOf(HammingBlockSizeChoiceArray, true))
+            {
+                case 0:
+                    return 16;
+                case 1:
+                    return 64;
+                case 2:
+                    return 256;
+            }
+            return -1;
+        }
+
+        public bool[] HammingBlockSizeChoiceArray { get; set; } = new bool[3];
+
 
         bool CanCreateFile(string filepath)
         {
@@ -165,7 +183,13 @@ namespace Interface
                     FilepathOut = string.Empty;
                     break;
                 case OperationType.Encode:
-                    FilepathOut = Path.Combine(directory, name + ".encoded");
+                    if (ChosenEncoding != null)
+                    {
+                        string extension_ = ".encoded";
+                        if (ChosenEncoding.EncodingType == EncodingType.Hamming)
+                            extension_ = ".hamming";
+                        FilepathOut = Path.Combine(directory, name + extension_);
+                    }
                     break;
                 case OperationType.Decode:
                     if (!name.Contains('.'))
@@ -176,7 +200,7 @@ namespace Interface
                     
                     var nameNoExtension = Path.GetFileNameWithoutExtension(name);
                     var extension = Path.GetExtension(name);
-                    if (extension != ".encoded")
+                    if (extension != ".encoded" || extension != ".hamming")
                     {
                         FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
                         return;
@@ -205,8 +229,18 @@ namespace Interface
                     var bgWorker = new BackgroundWorker();
 
                     var tokenSource = new CancellationTokenSource();
-                    bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(FilepathIn, FilepathOut, 
-                        ChosenEncoding.EncodingType, tokenSource.Token);
+
+                    if (ChosenEncoding.EncodingType == EncodingType.Hamming)
+                    {
+                        bgWorker.DoWork += (sender, e) => e.Result = HammingEncoder.Encode(FilepathIn, FilepathOut, 
+                            HammingBlockSize(), tokenSource.Token);
+                    }
+                    else
+                    {
+                        bgWorker.DoWork += (sender, e) => e.Result = Encoder.Encode(FilepathIn, FilepathOut,
+                            ChosenEncoding.EncodingType, tokenSource.Token);
+                    }
+
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
                         if (!string.IsNullOrEmpty((string)e.Result))
@@ -230,13 +264,22 @@ namespace Interface
                             File.Delete(FilepathOut);
                     };
                 }, 
-                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && ChosenEncoding != null),
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && ChosenEncoding != null && (HammingBlockSize() != -1)),
                 new OperationEntry(OperationType.Decode, "Decode", x => 
                 {
                     var bgWorker = new BackgroundWorker();
 
                     var tokenSource = new CancellationTokenSource();
-                    bgWorker.DoWork += (sender, e) => e.Result = Decoder.Decode(FilepathIn, FilepathOut, tokenSource.Token);
+
+                    if (ChosenEncoding.EncodingType == EncodingType.Hamming)
+                    {
+                        bgWorker.DoWork += (sender, e) => e.Result = HammingDecoder.Decode(FilepathIn, FilepathOut, 
+                            HammingBlockSize(), tokenSource.Token);
+                    }
+                    else
+                    {
+                        bgWorker.DoWork += (sender, e) => e.Result = Decoder.Decode(FilepathIn, FilepathOut, tokenSource.Token);
+                    }
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
                         if (!string.IsNullOrEmpty((string)e.Result))
@@ -260,7 +303,7 @@ namespace Interface
                             File.Delete(FilepathOut);
                     };
                 }, 
-                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut)),
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && (HammingBlockSize() != -1)),
                 new OperationEntry(OperationType.CountEntropy, "Calculate entropy", x =>
                 {
                     var bgWorker = new BackgroundWorker();
@@ -294,7 +337,8 @@ namespace Interface
             EncodingChoice = new ObservableCollection<EncodingEntry>()
             {
                 new EncodingEntry(EncodingType.ShennonFano, "Shennon-Fano"),
-                new EncodingEntry(EncodingType.Huffman, "Huffman")
+                new EncodingEntry(EncodingType.Huffman, "Huffman"),
+                new EncodingEntry(EncodingType.Hamming, "Hamming"),
             };
 
             ChooseFile = new RelayCommand(x =>

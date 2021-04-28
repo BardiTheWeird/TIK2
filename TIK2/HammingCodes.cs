@@ -70,7 +70,7 @@ namespace TIK2
                 .Where(x => x.Item2 == 1)
                 .Select(x => x.Item1);
 
-            var mistakePosition = onesPositions.Aggregate((x, y) => x ^ y);
+            var mistakePosition = onesPositions.Aggregate(0, (x, y) => x ^ y);
             if (mistakePosition != 0)
             {
                 var wrongBit = message[mistakePosition];

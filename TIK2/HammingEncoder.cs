@@ -13,15 +13,15 @@ namespace TIK2
     public class HammingEncoder
     {
         public string Log { get; set; }
-        private Stopwatch _sw;
+        private Stopwatch _sw = new Stopwatch();
         private string _errorDumpFile = "hammingEncoderErrorDump.txt";
 
         public string Encode(string filepathIn, string filepathOut, int blockSize, CancellationToken token)
         {
             BitReader br = null;
             BitWriter bw = null;
-            try
-            {
+            //try
+            //{
                 _sw.Start();
 
                 if (!HelperMath.IsPowerOfTwo(blockSize))
@@ -52,7 +52,7 @@ namespace TIK2
 
                 var previousPercentage = -1;
 
-                for (long i = lenOverflow; i < len - lenOverflow; i += blockSize)
+                for (long i = lenOverflow; i < len * 8 - lenOverflow; i += informationBlockSize)
                 {
                     if (token.IsCancellationRequested)
                     {
@@ -83,31 +83,31 @@ namespace TIK2
                 _sw.Reset();
 
                 return outString;
-            }
-            catch (EmptyFileException e)
-            {
-                Log = "";
-                _sw.Reset();
+            //}
+            //catch (EmptyFileException e)
+            //{
+            //    Log = "";
+            //    _sw.Reset();
 
-                return $"Encoding failed. Cannot encode an empty file";
-            }
-            catch (Exception e)
-            {
-                Log = "";
-                _sw.Reset();
-                File.WriteAllText(_errorDumpFile, e.Message);
+            //    return $"Encoding failed. Cannot encode an empty file";
+            //}
+            //catch (Exception e)
+            //{
+            //    Log = "";
+            //    _sw.Reset();
+            //    File.WriteAllText(_errorDumpFile, e.Message);
 
-                return $"Encoding failed. Details are in the encoder error dump file";
-            }
-            finally
-            {
-                try
-                {
-                    br.StopReading();
-                    bw.StopWriting();
-                }
-                catch { }
-            }
+            //    return $"Encoding failed. Details are in the encoder error dump file";
+            //}
+            //finally
+            //{
+            //    try
+            //    {
+            //        br.StopReading();
+            //        bw.StopWriting();
+            //    }
+            //    catch { }
+            //}
         }
     }
 }

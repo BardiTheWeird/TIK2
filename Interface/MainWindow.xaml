@@ -36,11 +36,20 @@
             <ColumnDefinition Width=".5*"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="10"
+        <StackPanel Grid.Row="10" Grid.Column="0" Grid.ColumnSpan="3"
                     Orientation="Horizontal">
             <Button Command="{Binding Execute}">Execute</Button>
             <Button Command="{Binding Cancel}">Cancel</Button>
             <Button Command="{Binding OpenOutputDirectory}">Open Output Directory</Button>
+        </StackPanel>
+
+        <StackPanel Grid.Row="10" Grid.Column="3" Grid.ColumnSpan="5" Margin="10"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center">
+            <TextBlock Padding="0,0,10,0"> Hamming block size </TextBlock>
+            <RadioButton Content="16" GroupName="HammingBlockSize" IsChecked="{Binding HammingBlockSizeChoiceArray[0]}" Padding="10, 0, 20, 0"/>
+            <RadioButton Content="64" GroupName="HammingBlockSize" IsChecked="{Binding HammingBlockSizeChoiceArray[1]}" Padding="10, 0, 20, 0"/>
+            <RadioButton Content="256" GroupName="HammingBlockSize" IsChecked="{Binding HammingBlockSizeChoiceArray[2]}" Padding="10, 0, 20, 0"/>
         </StackPanel>
 
         <Button Grid.Row="0" Command="{Binding ChooseFile}">Choose file</Button>
@@ -87,6 +96,8 @@
                     <Binding Path="Encoder.Log"/>
                     <Binding Path="Decoder.Log"/>
                     <Binding Path="EntropyCounter.Log"/>
+                    <Binding Path="HammingEncoder.Log"/>
+                    <Binding Path="HammingDecoder.Log"/>
                 </MultiBinding>
             </TextBlock.Text>
         </TextBlock>
