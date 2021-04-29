@@ -58,7 +58,10 @@ namespace TIK2
 
             var previousPercentage = -1;
 
-            for (long i = 0; i < bitLength; i += blockSize)
+            br.ReadBits(16, out var lenOverflowBuffer);
+            bw.WriteBuffer(lenOverflowBuffer);
+
+            for (long i = 0; i < bitLength - blockSize; i += blockSize)
             {
                 if (token.IsCancellationRequested)
                 {

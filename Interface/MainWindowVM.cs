@@ -118,6 +118,7 @@ namespace Interface
         public ICommand Cancel { get; set; }
         public ICommand Execute { get; set; }
         public ICommand OpenOutputDirectory { get; set; }
+        public ICommand OutputToInput { get; set; }
 
         private Action _cancelAction { get; set; }
         public bool IsExecuting { get; set; }
@@ -241,7 +242,7 @@ namespace Interface
                     {
                         string extension_ = ".encoded";
                         if (ChosenEncoding.EncodingType == EncodingType.Hamming)
-                            extension_ = ".hamming";
+                            extension_ = $".hamming{HammingBlockSize()}";
                         FilepathOut = Path.Combine(directory, name + extension_);
                     }
                     break;
@@ -254,7 +255,7 @@ namespace Interface
 
                     var nameNoExtension = Path.GetFileNameWithoutExtension(name);
                     var extension = Path.GetExtension(name);
-                    if (extension != ".encoded" && extension != ".hamming")
+                    if (extension != ".encoded" && !extension.Contains(".hamming"))
                     {
                         FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
                         return;
@@ -380,7 +381,7 @@ namespace Interface
                             File.Delete(FilepathOut);
                     };
                 }, 
-                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && (HammingBlockSize() != -1)),
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && (HammingBlockSize() != -1) && ChosenEncoding != null),
                 
                 new OperationEntry(OperationType.CountEntropy, "Calculate entropy", x =>
                 {
@@ -473,6 +474,11 @@ namespace Interface
                 //Process.Start(@"cmd.exe"); 
             }, 
                 x => Directory.Exists(Path.GetDirectoryName(FilepathOut)));
+            OutputToInput = new RelayCommand(x =>
+            {
+                FilepathIn = FilepathOut;
+                SetFilepathOut();
+            }, x => !string.IsNullOrEmpty(FilepathOut));
         }
     }
 

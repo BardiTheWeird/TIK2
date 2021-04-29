@@ -41,6 +41,7 @@
             <Button Command="{Binding Execute}">Execute</Button>
             <Button Command="{Binding Cancel}">Cancel</Button>
             <Button Command="{Binding OpenOutputDirectory}">Open Output Directory</Button>
+            <Button Command="{Binding OutputToInput}">Out to In</Button>
         </StackPanel>
 
         <StackPanel Grid.Row="10" Grid.Column="3" Grid.ColumnSpan="5" Margin="10">
