@@ -251,7 +251,7 @@ namespace Interface
                         FilepathOut = Path.Combine(directory, name + " - decoded");
                         return;
                     }
-                    
+
                     var nameNoExtension = Path.GetFileNameWithoutExtension(name);
                     var extension = Path.GetExtension(name);
                     if (extension != ".encoded" && extension != ".hamming")
@@ -271,9 +271,26 @@ namespace Interface
                     FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
                     break;
                 case OperationType.InfuseErrors:
+                    var errorsString = $" [{ErrorCount} error{(ErrorCount > 1 ? "s" : "")}]";
                     extension = Path.GetExtension(FilepathIn);
                     nameNoExtension = Path.GetFileNameWithoutExtension(FilepathIn);
-                    FilepathOut = Path.Combine(directory, nameNoExtension + $" - {ErrorCount} errors" + extension);
+
+                    if (!name.Contains('.'))
+                    {
+                        FilepathOut = Path.Combine(directory, nameNoExtension + errorsString);
+                        return;
+                    }
+
+                    if (!nameNoExtension.Contains('.'))
+                    {
+                        FilepathOut = Path.Combine(directory, nameNoExtension + errorsString + extension);
+                        return;
+                    }
+
+                    var nameNoExtensionNoExtension = Path.GetFileNameWithoutExtension(nameNoExtension);
+                    var secondExtension = Path.GetExtension(nameNoExtension);
+
+                    FilepathOut = Path.Combine(directory, nameNoExtensionNoExtension + errorsString + secondExtension + extension);
                     break;
             }
         }
