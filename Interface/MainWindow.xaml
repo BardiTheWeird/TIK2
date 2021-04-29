@@ -48,9 +48,9 @@
             <StackPanel Orientation="Horizontal"
                         VerticalAlignment="Center">
                 <TextBlock Padding="0,0,10,0"> Hamming block size </TextBlock>
-                <RadioButton Content="16" GroupName="HammingBlockSize" IsChecked="{Binding HammingBlockSizeChoiceArray[0]}" Padding="10, 0, 20, 0"/>
-                <RadioButton Content="64" GroupName="HammingBlockSize" IsChecked="{Binding HammingBlockSizeChoiceArray[1]}" Padding="10, 0, 20, 0"/>
-                <RadioButton Content="256" GroupName="HammingBlockSize" IsChecked="{Binding HammingBlockSizeChoiceArray[2]}" Padding="10, 0, 20, 0"/>
+                <RadioButton Content="16" GroupName="HammingBlockSize" IsChecked="{Binding Hamming16}" Padding="10, 0, 20, 0"/>
+                <RadioButton Content="64" GroupName="HammingBlockSize" IsChecked="{Binding Hamming64}" Padding="10, 0, 20, 0"/>
+                <RadioButton Content="256" GroupName="HammingBlockSize" IsChecked="{Binding Hamming256}" Padding="10, 0, 20, 0"/>
             </StackPanel>
             <StackPanel>
                 <StackPanel Orientation="Horizontal"

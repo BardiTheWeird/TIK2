@@ -135,20 +135,57 @@ namespace Interface
         public HammingDecoder HammingDecoder { get; set; } = new HammingDecoder();
         public ErrorInfuser ErrorInfuser { get; set; } = new ErrorInfuser();
 
-
-        public bool[] HammingBlockSizeChoiceArray { get; set; } = new bool[3];
-        public int HammingBlockSize()
-        {
-            switch (Array.IndexOf(HammingBlockSizeChoiceArray, true))
+        bool _hamming16;
+        bool _hamming64;
+        bool _hamming256;
+        public bool Hamming16 
+        { 
+            get => _hamming16;
+            set
             {
-                case 0:
-                    return 16;
-                case 1:
-                    return 64;
-                case 2:
-                    return 256;
+                if (value == _hamming16)
+                    return;
+
+                _hamming16 = value;
+                SetFilepathOut();
+            } 
+        }
+        public bool Hamming64
+        {
+            get => _hamming64;
+            set
+            {
+                if (value == _hamming64)
+                    return;
+
+                _hamming64 = value;
+                SetFilepathOut();
             }
-            return -1;
+        }
+        public bool Hamming256
+        {
+            get => _hamming256;
+            set
+            {
+                if (value == _hamming256)
+                    return;
+
+                _hamming256 = value;
+                SetFilepathOut();
+            }
+        }
+        public int HammingBlockSize
+        {
+            get
+            {
+                if (Hamming16)
+                    return 16;
+                else if (Hamming64)
+                    return 64;
+                else if (Hamming256)
+                    return 256;
+                return -1;
+            }
         }
 
         bool _errors1;
@@ -242,7 +279,7 @@ namespace Interface
                     {
                         string extension_ = ".encoded";
                         if (ChosenEncoding.EncodingType == EncodingType.Hamming)
-                            extension_ = $".hamming{HammingBlockSize()}";
+                            extension_ = $".hamming{HammingBlockSize}";
                         FilepathOut = Path.Combine(directory, name + extension_);
                     }
                     break;
@@ -310,7 +347,7 @@ namespace Interface
                     if (ChosenEncoding.EncodingType == EncodingType.Hamming)
                     {
                         bgWorker.DoWork += (sender, e) => e.Result = HammingEncoder.Encode(FilepathIn, FilepathOut, 
-                            HammingBlockSize(), tokenSource.Token);
+                            HammingBlockSize, tokenSource.Token);
                     }
                     else
                     {
@@ -341,7 +378,7 @@ namespace Interface
                             File.Delete(FilepathOut);
                     };
                 }, 
-                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && ChosenEncoding != null && (HammingBlockSize() != -1)),
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && ChosenEncoding != null && (HammingBlockSize != -1)),
                 
                 new OperationEntry(OperationType.Decode, "Decode", x => 
                 {
@@ -352,7 +389,7 @@ namespace Interface
                     if (ChosenEncoding.EncodingType == EncodingType.Hamming)
                     {
                         bgWorker.DoWork += (sender, e) => e.Result = HammingDecoder.Decode(FilepathIn, FilepathOut, 
-                            HammingBlockSize(), tokenSource.Token);
+                            HammingBlockSize, tokenSource.Token);
                     }
                     else
                     {
@@ -381,7 +418,7 @@ namespace Interface
                             File.Delete(FilepathOut);
                     };
                 }, 
-                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && (HammingBlockSize() != -1) && ChosenEncoding != null),
+                    x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && (HammingBlockSize != -1) && ChosenEncoding != null),
                 
                 new OperationEntry(OperationType.CountEntropy, "Calculate entropy", x =>
                 {
@@ -418,7 +455,7 @@ namespace Interface
                     var tokenSource = new CancellationTokenSource();
 
                     bgWorker.DoWork += (sender, e) => e.Result = ErrorInfuser.InfuseErrorIntoFile(FilepathIn, FilepathOut,
-                        HammingBlockSize(), ErrorCount, tokenSource.Token);
+                        HammingBlockSize, ErrorCount, tokenSource.Token);
 
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
@@ -442,7 +479,7 @@ namespace Interface
                         if (File.Exists(FilepathOut))
                             File.Delete(FilepathOut);
                     };
-                }, x => File.Exists(FilepathIn) && ErrorCount != -1 && HammingBlockSize() != -1),
+                }, x => File.Exists(FilepathIn) && ErrorCount != -1 && HammingBlockSize != -1),
             };
 
             EncodingChoice = new ObservableCollection<EncodingEntry>()
