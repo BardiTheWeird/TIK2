@@ -127,55 +127,68 @@ namespace Helper
             Enumerable.Range(0, BitLength)
                 .Select(i => (i, this[i]));
 
-        public void InsertBit(byte bit, long position)
+        //public void InsertBit(byte bit, long position)
+        //{
+        //    if (position < 0)
+        //        throw new ArgumentOutOfRangeException();
+
+        //    if (position >= BitLength)
+        //    {
+        //        AppendBit(bit);
+        //        return;
+        //    }
+
+        //    if (BitLength % 8 == 0)
+        //        ByteBuffer.Add(0);
+
+        //    var byteIndex = (int)(position / 8);
+        //    var bitPosition = (int)(position % 8);
+
+        //    if (byteIndex == ByteBuffer.Count - 1)
+        //    {
+        //        var bitsLastByte = BitLength % 8;
+        //        var byteOld = ByteBuffer[byteIndex];
+        //        var left = (byteOld >> (bitsLastByte - bitPosition)) << (bitsLastByte - bitPosition + 1);
+        //        var right = byteOld & Masks.RightMasks[bitPosition + 8 - bitsLastByte];
+        //        var insert = bit << (bitsLastByte - bitPosition);
+        //        ByteBuffer[byteIndex] = (byte)(left + right + insert);
+        //    }
+        //    else 
+        //    {
+        //        var byteOld = ByteBuffer[byteIndex];
+        //        var left = (byteOld >> (8 - bitPosition)) << (8 - bitPosition);
+        //        var right = (byteOld & Masks.RightMasks[bitPosition]) >> 1;
+        //        var carry = byteOld & 1;
+        //        var insert = (bit << (8 - bitPosition - 1)) & 0xff;
+
+        //        ByteBuffer[byteIndex] = (byte)(left + right + insert);
+
+        //        while (++byteIndex < BitLength / 8 - 1)
+        //        {
+        //            byteOld = ByteBuffer[byteIndex];
+        //            var byteNew = (byteOld >> 1) + (carry << 7);
+        //            carry = byteOld & 1;
+        //            ByteBuffer[byteIndex] = (byte)byteNew;
+        //        }
+
+        //        byteOld = ByteBuffer[byteIndex];
+        //        ByteBuffer[byteIndex] = (byte)(byteOld + (carry << (BitLength % 8)));
+        //    }
+
+        //    BitLength++;
+        //}
+
+        public BitBuffer PadRight(byte paddingBit, int count)
         {
-            if (position < 0)
-                throw new ArgumentOutOfRangeException();
+            if (paddingBit > 1)
+                throw new ArgumentException($"can't pad with {paddingBit}");
+            if (count < 0)
+                throw new ArgumentException("count is less than 0");
 
-            if (position >= BitLength)
-            {
-                AppendBit(bit);
-                return;
-            }
+            for (int _ = 0; _ < count; _++)
+                AppendBit(paddingBit);
 
-            if (BitLength % 8 == 0)
-                ByteBuffer.Add(0);
-
-            var byteIndex = (int)(position / 8);
-            var bitPosition = (int)(position % 8);
-
-            if (byteIndex == ByteBuffer.Count - 1)
-            {
-                var bitsLastByte = BitLength % 8;
-                var byteOld = ByteBuffer[byteIndex];
-                var left = (byteOld >> (bitsLastByte - bitPosition)) << (bitsLastByte - bitPosition + 1);
-                var right = byteOld & Masks.RightMasks[bitPosition + 8 - bitsLastByte];
-                var insert = bit << (bitsLastByte - bitPosition);
-                ByteBuffer[byteIndex] = (byte)(left + right + insert);
-            }
-            else 
-            {
-                var byteOld = ByteBuffer[byteIndex];
-                var left = (byteOld >> (8 - bitPosition)) << (8 - bitPosition);
-                var right = (byteOld & Masks.RightMasks[bitPosition]) >> 1;
-                var carry = byteOld & 1;
-                var insert = (bit << (8 - bitPosition - 1)) & 0xff;
-
-                ByteBuffer[byteIndex] = (byte)(left + right + insert);
-
-                while (++byteIndex < BitLength / 8 - 1)
-                {
-                    byteOld = ByteBuffer[byteIndex];
-                    var byteNew = (byteOld >> 1) + (carry << 7);
-                    carry = byteOld & 1;
-                    ByteBuffer[byteIndex] = (byte)byteNew;
-                }
-
-                byteOld = ByteBuffer[byteIndex];
-                ByteBuffer[byteIndex] = (byte)(byteOld + (carry << (BitLength % 8)));
-            }
-
-            BitLength++;
+            return this;
         }
 
         #region writingMisc
@@ -243,6 +256,11 @@ namespace Helper
         public BitBuffer(BitBuffer buffer) : this()
         {
             AppendBuffer(buffer);
+        }
+
+        public BitBuffer(byte firstByte) : this()
+        {
+            AppendByte(firstByte);
         }
         #endregion
     }

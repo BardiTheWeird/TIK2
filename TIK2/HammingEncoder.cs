@@ -24,68 +24,69 @@ namespace TIK2
             BitReader br = null;
             BitWriter bw = null;
             //try
-            //{
-                _sw.Start();
+        //{
+            _sw.Start();
 
-                if (!HelperMath.IsPowerOfTwo(blockSize))
-                    throw new ArgumentException("block size is not a power of two");
+            if (!HelperMath.IsPowerOfTwo(blockSize))
+                throw new ArgumentException("block size is not a power of two");
 
-                var informationBlockSize = HammingCodes.GetInformationBlockSize(blockSize);
+            var informationBlockSize = HammingCodes.GetInformationBlockSize(blockSize);
 
-                br = new BitReader(filepathIn);
-                bw = new BitWriter(filepathOut);
+            br = new BitReader(filepathIn);
+            bw = new BitWriter(filepathOut);
 
-                // The file format is simple.
-                // The first byte is the amount of overflown bits (that don't fit the informationBlockSize)
-                // The second blockSized block encodes overflown bits + some padded zeroes to the right
-                // The rest is all just encoded blocks
+            // The file format is simple.
+            // The first 2 bytes encode a byte which is the amount of overflown bits (that don't fit the informationBlockSize)
+            // The second blockSized block encodes overflown bits + some padded zeroes to the right
+            // The rest is all just encoded blocks
 
-                var len = br.FileLength;
-                var lenBits = len * 8;
-                var lenOverflow = (byte)(lenBits % informationBlockSize);
-                bw.WriteByte(lenOverflow);
-                if (lenOverflow > 0)
+            var len = br.FileLength;
+            var lenBits = len * 8;
+            var lenOverflow = (byte)(lenBits % informationBlockSize);
+
+            var encodedLenOverflow = HammingCodes.EncodeHamming(new BitBuffer(lenOverflow).PadRight(0, 3));
+            bw.WriteBuffer(encodedLenOverflow);
+
+            if (lenOverflow > 0)
+            {
+                br.ReadBits(lenOverflow, out var overflownBuffer);
+                overflownBuffer.PadRight(0, informationBlockSize - lenOverflow);
+                bw.WriteBuffer(HammingCodes.EncodeHamming(overflownBuffer));
+            }
+
+            var previousPercentage = -1;
+
+            for (long i = lenOverflow; i < len * 8; i += informationBlockSize)
+            {
+                if (token.IsCancellationRequested)
                 {
-                    br.ReadBits(lenOverflow, out var overflownBuffer);
-                    var padBuffer = new BitBuffer();
-                    padBuffer.FillWithZeroesBits(informationBlockSize - lenOverflow);
-                    overflownBuffer.AppendBuffer(padBuffer);
-                    bw.WriteBuffer(HammingCodes.EncodeHamming(overflownBuffer));
+                    br.StopReading();
+                    bw.StopWriting();
+                    _sw.Reset();
+                    Log = string.Empty;
+                    return string.Empty;
                 }
 
-                var previousPercentage = -1;
-
-                for (long i = lenOverflow; i < len * 8 - lenOverflow; i += informationBlockSize)
+                var percentage = (int)(Math.Round(i / 8 / (float)len, 2) * 100);
+                if (percentage > previousPercentage)
                 {
-                    if (token.IsCancellationRequested)
-                    {
-                        br.StopReading();
-                        bw.StopWriting();
-                        _sw.Reset();
-                        Log = string.Empty;
-                        return string.Empty;
-                    }
-
-                    var percentage = (int)(Math.Round(i / 8 / (float)len, 2) * 100);
-                    if (percentage > previousPercentage)
-                    {
-                        previousPercentage = percentage;
-                        Log = $"Hamming-coding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
-                    }
-
-                    br.ReadBits(informationBlockSize, out var infoBuffer);
-                    bw.WriteBuffer(HammingCodes.EncodeHamming(infoBuffer));
+                    previousPercentage = percentage;
+                    Log = $"Hamming-coding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                 }
-                bw.WriteTheRestOfTheBuffer();
-                bw.StopWriting();
-                br.StopReading();
 
-                Log = "";
-                var outString = $"Finished hamming-encoding. Encoded file: {Path.GetFileName(filepathOut)}.\n" +
-                    $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s\n";
-                _sw.Reset();
+                br.ReadBits(informationBlockSize, out var infoBuffer);
+                bw.WriteBuffer(HammingCodes.EncodeHamming(infoBuffer));
+            }
+            bw.WriteTheRestOfTheBuffer();
+            bw.StopWriting();
+            br.StopReading();
 
-                return outString;
+            Log = "";
+            var outString = $"Finished hamming-encoding. Encoded file: {Path.GetFileName(filepathOut)}.\n" +
+                $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s\n";
+            _sw.Reset();
+
+            return outString;
             //}
             //catch (EmptyFileException e)
             //{

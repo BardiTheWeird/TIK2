@@ -68,11 +68,10 @@ namespace TIK2
 
         public static (BitBuffer, DecodingResult, string) DecodeHamming(BitBuffer message)
         {
-            var parityBitsNumDouble = Math.Log2(message.BitLength);
-            var parityBitsNum = (int)parityBitsNumDouble;
-
-            if (parityBitsNumDouble > parityBitsNum)
+            if (!HelperMath.IsPowerOfTwo(message.BitLength))
                 return (null, DecodingResult.Fail, $"message length is {message.BitLength}, not a power of 2");
+
+            var parityBitsNum = (int)Math.Log2(message.BitLength);
 
             var onesPositions = message.Enumerate()
                 .Where(x => x.Item2 == 1)
@@ -108,7 +107,7 @@ namespace TIK2
                 return (decodedMessage, DecodingResult.PossibleMistake, log);
             }
 
-            return (decodedMessage, DecodingResult.Sucess, string.Empty);
+            return (decodedMessage, DecodingResult.Sucess, "No mistakes spotted");
         }
     }
 }

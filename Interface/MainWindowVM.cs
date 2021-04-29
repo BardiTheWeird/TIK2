@@ -24,6 +24,7 @@ namespace Interface
         Encode,
         Decode,
         CountEntropy,
+        InfuseErrors,
     }
 
     public class OperationEntry : INotifyPropertyChanged
@@ -131,6 +132,10 @@ namespace Interface
         public EntropyCounter.EntropyCounter EntropyCounter { get; set; } = new EntropyCounter.EntropyCounter();
         public HammingEncoder HammingEncoder { get; set; } = new HammingEncoder();
         public HammingDecoder HammingDecoder { get; set; } = new HammingDecoder();
+        public ErrorInfuser ErrorInfuser { get; set; } = new ErrorInfuser();
+
+
+        public bool[] HammingBlockSizeChoiceArray { get; set; } = new bool[3];
         public int HammingBlockSize()
         {
             switch (Array.IndexOf(HammingBlockSizeChoiceArray, true))
@@ -145,7 +150,56 @@ namespace Interface
             return -1;
         }
 
-        public bool[] HammingBlockSizeChoiceArray { get; set; } = new bool[3];
+        bool _errors1;
+        public bool Errors1 
+        { 
+            get => _errors1;
+            set 
+            {
+                if (value == _errors1)
+                    return;
+                _errors1 = value;
+                SetFilepathOut();
+            } 
+        }
+        bool _errors2;
+        public bool Errors2
+        {
+            get => _errors2;
+            set
+            {
+                if (value == _errors2)
+                    return;
+                _errors2 = value;
+                SetFilepathOut();
+            }
+        }
+        bool _errors3;
+        public bool Errors3
+        {
+            get => _errors3;
+            set
+            {
+                if (value == _errors3)
+                    return;
+                _errors3 = value;
+                SetFilepathOut();
+            }
+        }
+
+        public int ErrorCount
+        {
+            get 
+            {
+                if (Errors1)
+                    return 1;
+                else if (Errors2)
+                    return 2;
+                else if (Errors3)
+                    return 3;
+                return -1;
+            }
+        }
 
 
         bool CanCreateFile(string filepath)
@@ -216,6 +270,11 @@ namespace Interface
                     nameNoExtension = Path.GetFileNameWithoutExtension(nameNoExtension);
                     FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
                     break;
+                case OperationType.InfuseErrors:
+                    extension = Path.GetExtension(FilepathIn);
+                    nameNoExtension = Path.GetFileNameWithoutExtension(FilepathIn);
+                    FilepathOut = Path.Combine(directory, nameNoExtension + $" - {ErrorCount} errors" + extension);
+                    break;
             }
         }
 
@@ -265,6 +324,7 @@ namespace Interface
                     };
                 }, 
                     x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && ChosenEncoding != null && (HammingBlockSize() != -1)),
+                
                 new OperationEntry(OperationType.Decode, "Decode", x => 
                 {
                     var bgWorker = new BackgroundWorker();
@@ -304,6 +364,7 @@ namespace Interface
                     };
                 }, 
                     x => File.Exists(FilepathIn) && CanCreateFile(FilepathOut) && (HammingBlockSize() != -1)),
+                
                 new OperationEntry(OperationType.CountEntropy, "Calculate entropy", x =>
                 {
                     var bgWorker = new BackgroundWorker();
@@ -332,6 +393,38 @@ namespace Interface
                     };
                 }, 
                     x => File.Exists(FilepathIn)),
+                
+                new OperationEntry(OperationType.InfuseErrors, "Infuse errors", x =>
+                {
+                    var bgWorker = new BackgroundWorker();
+                    var tokenSource = new CancellationTokenSource();
+
+                    bgWorker.DoWork += (sender, e) => e.Result = ErrorInfuser.InfuseErrorIntoFile(FilepathIn, FilepathOut,
+                        HammingBlockSize(), ErrorCount, tokenSource.Token);
+
+                    bgWorker.RunWorkerCompleted += (sender, e) =>
+                    {
+                        if (!string.IsNullOrEmpty((string)e.Result))
+                            OutputText += e.Result + "\n";
+                        _cancelAction = null;
+                        IsExecuting = false;
+                        RaiseCanExecuteChanged();
+                    };
+
+                    bgWorker.RunWorkerAsync();
+
+                    _cancelAction = async () =>
+                    {
+                        tokenSource.Cancel();
+                        _cancelAction = null;
+                        Encoder.Log = "";
+                        OutputText += "Error infusion was canceled\n";
+
+                        await Task.Delay(1000);
+                        if (File.Exists(FilepathOut))
+                            File.Delete(FilepathOut);
+                    };
+                }, x => File.Exists(FilepathIn) && ErrorCount != -1 && HammingBlockSize() != -1),
             };
 
             EncodingChoice = new ObservableCollection<EncodingEntry>()
