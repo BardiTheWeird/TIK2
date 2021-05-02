@@ -4,6 +4,7 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Linq;
+using System.Numerics;
 
 namespace Helper
 {
@@ -78,6 +79,15 @@ namespace Helper
                 ByteBuffer.RemoveAt(ByteBuffer.Count - 1);
 
             return output;
+        }
+
+        public void PopBits(int count)
+        {
+            if (count > BitLength)
+                throw new ArgumentException("count is greater than length");
+
+            for (int i = 0; i < count; i++)
+                PopBit();
         }
 
         public byte this[int index]
@@ -247,6 +257,9 @@ namespace Helper
                 .Append(Convert.ToString(ByteBuffer[^1], 2).PadLeft(BitLength % 8, '0')));
         }
 
+        public BigInteger ToBigInteger() =>
+            new BigInteger(ByteBuffer.Select(x => x).Reverse().ToArray());
+
         #region ctor
         public BitBuffer()
         {
@@ -261,6 +274,20 @@ namespace Helper
         public BitBuffer(byte firstByte) : this()
         {
             AppendByte(firstByte);
+        }
+
+        public BitBuffer(BigInteger bigInteger)
+        {
+            ByteBuffer = bigInteger.ToByteArray().Reverse().ToList();
+        }
+
+        public BitBuffer(byte bit, int count) : this()
+        {
+            if (!(bit == 0 || bit == 1))
+                throw new ArgumentException($"bit is expected to be 0 or 1, not {bit}");
+
+            for (int i = 0; i < count; i++)
+                AppendBit(bit);
         }
         #endregion
     }
