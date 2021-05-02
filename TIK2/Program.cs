@@ -80,18 +80,7 @@ namespace TIK2
         }
         static void Main(string[] args)
         {
-            var arr = new (BigInteger, int)[]
-            {
-                (0, -1),
-                (0b_0000_0001, 0),
-                (0b_0000_1001, 3),
-                (0b_0000_0100__0000_0001, 10),
-            };
 
-            Console.WriteLine(string.Join("\n",
-                arr.Select(pair => (pair.Item1, CRC.GetLargestBinPower(pair.Item1), pair.Item2))
-                .Select(pair => $"had: {string.Join("_", pair.Item1.ToByteArray().Select(x => Convert.ToString(x, 2).PadLeft(8, '0')))}; " +
-                $"received: {pair.Item2}; expected: {pair.Item3}")));
         }
     }
 }

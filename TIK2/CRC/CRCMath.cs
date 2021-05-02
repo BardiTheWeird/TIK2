@@ -14,7 +14,7 @@ namespace TIK2
         Corrupted,
     }
 
-    static class CRC
+    static class CRCMath
     {
         public static BigInteger Polynomial = 0xd175; // message length = 32751; HD = 4;
 

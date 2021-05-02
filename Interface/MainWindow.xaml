@@ -44,7 +44,8 @@
             <Button Command="{Binding OutputToInput}">Out to In</Button>
         </StackPanel>
 
-        <StackPanel Grid.Row="10" Grid.Column="3" Grid.ColumnSpan="5" Margin="10">
+        <StackPanel Grid.Row="10" Grid.Column="3" Grid.ColumnSpan="5" Margin="10"
+                    >
             <StackPanel Orientation="Horizontal"
                         VerticalAlignment="Center">
                 <TextBlock Padding="0,0,10,0"> Hamming block size </TextBlock>
@@ -60,6 +61,13 @@
                     <RadioButton Content="2" GroupName="ErrorCount" IsChecked="{Binding Errors2}" Padding="10, 0, 20, 0"/>
                     <RadioButton Content="3" GroupName="ErrorCount" IsChecked="{Binding Errors3}" Padding="10, 0, 20, 0"/>
                 </StackPanel>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <TextBlock Padding="0,0,10,0">CRC block size</TextBlock>
+                <TextBox Text="{Binding CRCBlockSizeString, UpdateSourceTrigger=PropertyChanged}"
+                         Width="50">
+                </TextBox>
             </StackPanel>
         </StackPanel>
 
@@ -110,6 +118,8 @@
                     <Binding Path="HammingEncoder.Log"/>
                     <Binding Path="HammingDecoder.Log"/>
                     <Binding Path="ErrorInfuser.Log"/>
+                    <Binding Path="CRCEncoder.Log"/>
+                    <Binding Path="CRCDecoder.Log"/>
                 </MultiBinding>
             </TextBlock.Text>
         </TextBlock>
