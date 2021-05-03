@@ -138,112 +138,11 @@ namespace Interface
         public CRCEncoder CRCEncoder { get; set; } = new CRCEncoder();
         public CRCDecoder CRCDecoder { get; set; } = new CRCDecoder();
 
-        public uint CRCBlockSize { get; set; }
-        public string CRCBlockSizeString { get; set; }
+        public uint BlockSize { get; set; }
 
-        bool _hamming16;
-        bool _hamming64;
-        bool _hamming256;
-        public bool Hamming16 
-        { 
-            get => _hamming16;
-            set
-            {
-                if (value == _hamming16)
-                    return;
+        public int ErrorCount { get; set; }
 
-                _hamming16 = value;
-                SetFilepathOut();
-            } 
-        }
-        public bool Hamming64
-        {
-            get => _hamming64;
-            set
-            {
-                if (value == _hamming64)
-                    return;
-
-                _hamming64 = value;
-                SetFilepathOut();
-            }
-        }
-        public bool Hamming256
-        {
-            get => _hamming256;
-            set
-            {
-                if (value == _hamming256)
-                    return;
-
-                _hamming256 = value;
-                SetFilepathOut();
-            }
-        }
-        public int HammingBlockSize
-        {
-            get
-            {
-                if (Hamming16)
-                    return 16;
-                else if (Hamming64)
-                    return 64;
-                else if (Hamming256)
-                    return 256;
-                return -1;
-            }
-        }
-
-        bool _errors1;
-        public bool Errors1 
-        { 
-            get => _errors1;
-            set 
-            {
-                if (value == _errors1)
-                    return;
-                _errors1 = value;
-                SetFilepathOut();
-            } 
-        }
-        bool _errors2;
-        public bool Errors2
-        {
-            get => _errors2;
-            set
-            {
-                if (value == _errors2)
-                    return;
-                _errors2 = value;
-                SetFilepathOut();
-            }
-        }
-        bool _errors3;
-        public bool Errors3
-        {
-            get => _errors3;
-            set
-            {
-                if (value == _errors3)
-                    return;
-                _errors3 = value;
-                SetFilepathOut();
-            }
-        }
-
-        public int ErrorCount
-        {
-            get 
-            {
-                if (Errors1)
-                    return 1;
-                else if (Errors2)
-                    return 2;
-                else if (Errors3)
-                    return 3;
-                return -1;
-            }
-        }
+        public uint InitialErrorOffset { get; set; }
 
 
         bool CanCreateFile(string filepath)
@@ -285,7 +184,7 @@ namespace Interface
                     {
                         string extension_ = ".encoded";
                         if (ChosenEncoding.EncodingType == EncodingType.Hamming)
-                            extension_ = $".hamming{HammingBlockSize}";
+                            extension_ = $".hamming{BlockSize}";
                         else if (ChosenEncoding.EncodingType == EncodingType.CRC)
                             extension_ = ".crc";
                         FilepathOut = Path.Combine(directory, name + extension_);
@@ -355,12 +254,12 @@ namespace Interface
                     if (ChosenEncoding.EncodingType == EncodingType.Hamming)
                     {
                         bgWorker.DoWork += (sender, e) => e.Result = HammingEncoder.Encode(FilepathIn, FilepathOut, 
-                            HammingBlockSize, tokenSource.Token);
+                            (int)BlockSize, tokenSource.Token);
                     }
                     else if (ChosenEncoding.EncodingType == EncodingType.CRC)
                     {
                         bgWorker.DoWork += (sender, e) => e.Result = CRCEncoder.Encode(FilepathIn, FilepathOut,
-                            CRCBlockSize, tokenSource.Token);
+                            BlockSize, tokenSource.Token);
                     }
                     else
                     {
@@ -402,12 +301,12 @@ namespace Interface
                     if (ChosenEncoding.EncodingType == EncodingType.Hamming)
                     {
                         bgWorker.DoWork += (sender, e) => e.Result = HammingDecoder.Decode(FilepathIn, FilepathOut, 
-                            HammingBlockSize, tokenSource.Token);
+                            (int)BlockSize, tokenSource.Token);
                     }
                     else if (ChosenEncoding.EncodingType == EncodingType.CRC)
                     {
                         bgWorker.DoWork += (sender, e) => e.Result = CRCDecoder.Decode(FilepathIn, FilepathOut,
-                            CRCBlockSize, tokenSource.Token);
+                            BlockSize, tokenSource.Token);
                     }
                     else
                     {
@@ -473,7 +372,7 @@ namespace Interface
                     var tokenSource = new CancellationTokenSource();
 
                     bgWorker.DoWork += (sender, e) => e.Result = ErrorInfuser.InfuseErrorIntoFile(FilepathIn, FilepathOut,
-                        HammingBlockSize, ErrorCount, tokenSource.Token);
+                        (int)BlockSize, ErrorCount, InitialErrorOffset, tokenSource.Token);
 
                     bgWorker.RunWorkerCompleted += (sender, e) =>
                     {
@@ -497,21 +396,15 @@ namespace Interface
                         if (File.Exists(FilepathOut))
                             File.Delete(FilepathOut);
                     };
-                }, x => File.Exists(FilepathIn) && ErrorCount != -1 && HammingBlockSize != -1),
+                }, x => File.Exists(FilepathIn) && BlockSize > 0 && ErrorCount > 0),
             };
 
             EncodingChoice = new ObservableCollection<EncodingEntry>()
             {
                 new EncodingEntry(EncodingType.ShennonFano, "Shennon-Fano", () => true),
                 new EncodingEntry(EncodingType.Huffman, "Huffman", () => true),
-                new EncodingEntry(EncodingType.Hamming, "Hamming", () => HammingBlockSize != -1),
-                new EncodingEntry(EncodingType.CRC, "CRC", () =>
-                {
-                    var res = uint.TryParse(CRCBlockSizeString, out var size);
-                    if (res)
-                        CRCBlockSize = size;
-                    return res && size > 0;
-                })
+                new EncodingEntry(EncodingType.Hamming, "Hamming", () => BlockSize > 1 && Helper.HelperMath.IsPowerOfTwo((int)BlockSize)),
+                new EncodingEntry(EncodingType.CRC, "CRC", () => BlockSize > 1),
             };
 
             ChooseFile = new RelayCommand(x =>

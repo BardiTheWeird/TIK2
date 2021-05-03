@@ -44,7 +44,8 @@ namespace TIK2
             return newBuffer;
         }
 
-        public string InfuseErrorIntoFile(string filepathIn, string filepathOut, int blockSize, int errorCount, CancellationToken token)
+        public string InfuseErrorIntoFile(string filepathIn, string filepathOut, int blockSize, 
+            int errorCount, uint initialOffset, CancellationToken token)
         {
             BitReader br = null;
             BitWriter bw = null;
@@ -58,8 +59,8 @@ namespace TIK2
 
             var previousPercentage = -1;
 
-            br.ReadBits(16, out var lenOverflowBuffer);
-            bw.WriteBuffer(lenOverflowBuffer);
+            br.ReadBits(initialOffset, out var offsetBuffer);
+            bw.WriteBuffer(offsetBuffer);
 
             for (long i = 0; i < bitLength - blockSize; i += blockSize)
             {
