@@ -30,13 +30,14 @@ namespace TIK2
                 bw = new BitWriter(filepathOut);
 
                 var resultCount = new Dictionary<HammingCodes.DecodingResult, uint>();
-                resultCount.Add(HammingCodes.DecodingResult.Sucess, 0);
-                resultCount.Add(HammingCodes.DecodingResult.PossibleMistake, 0);
                 resultCount.Add(HammingCodes.DecodingResult.Fail, 0);
+                resultCount.Add(HammingCodes.DecodingResult.OK, 0);
+                resultCount.Add(HammingCodes.DecodingResult.OneBitErrorCorrected, 0);
+                resultCount.Add(HammingCodes.DecodingResult.TwoBitError, 0);
+                resultCount.Add(HammingCodes.DecodingResult.ThreeBitError, 0);
 
-
-                br.ReadBits(16, out var overflownLenBuffer);
-                var overflownLen = HammingCodes.DecodeHamming(overflownLenBuffer).Item1.ByteBuffer[0];
+                br.ReadBits(32, out var overflownLenBuffer);
+                var overflownLen = HammingCodes.DecodeHamming(overflownLenBuffer).Item1.ToBigInteger();
                 if (overflownLen > 0)
                 {
                     br.ReadBits(blockSize, out var overflownPadded);
@@ -83,8 +84,11 @@ namespace TIK2
                 Log = "";
                 var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}.\n" +
                     $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s\n" +
-                    $"\tBlocks with possible mistakes: {resultCount[HammingCodes.DecodingResult.PossibleMistake]}\n" +
-                    $"\tBlocks with failed decoding: {resultCount[HammingCodes.DecodingResult.Fail]}";
+                    $"\tFailed: {resultCount[HammingCodes.DecodingResult.Fail]}" + 
+                    $"\tOK: {resultCount[HammingCodes.DecodingResult.OK]}\n" +
+                    $"\t1-bit error corrected: {resultCount[HammingCodes.DecodingResult.OneBitErrorCorrected]}\n" +
+                    $"\t2-bit error: {resultCount[HammingCodes.DecodingResult.TwoBitError]}\n" +
+                    $"\t3-bit error: {resultCount[HammingCodes.DecodingResult.ThreeBitError]}";
                 _sw.Reset();
                 return res;
             }

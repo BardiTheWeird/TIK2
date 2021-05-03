@@ -36,15 +36,16 @@ namespace TIK2
                 bw = new BitWriter(filepathOut);
 
                 // The file format is simple.
-                // The first 2 bytes encode a byte which is the amount of overflown bits (that don't fit the informationBlockSize)
+                // The first 4 bytes encode 26 bits which is the amount of overflown bits (that don't fit the informationBlockSize)
                 // The second blockSized block encodes overflown bits + some padded zeroes to the right
                 // The rest is all just encoded blocks
 
                 var len = br.FileLength;
                 var lenBits = len * 8;
-                var lenOverflow = (byte)(lenBits % informationBlockSize);
+                var lenOverflow = (int)(lenBits % informationBlockSize);
 
-                var encodedLenOverflow = HammingCodes.EncodeHamming(new BitBuffer(lenOverflow).PadRight(0, 3));
+                var lenOverflowBuffer = new BitBuffer(0, 26) + new BitBuffer(lenOverflow);
+                var encodedLenOverflow = HammingCodes.EncodeHamming(lenOverflowBuffer);
                 bw.WriteBuffer(encodedLenOverflow);
 
                 if (lenOverflow > 0)

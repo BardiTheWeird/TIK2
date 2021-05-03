@@ -62,14 +62,18 @@ namespace TIK2
         public enum DecodingResult
         {
             Fail,
-            Sucess,
-            PossibleMistake,
+            OK,
+            OneBitErrorCorrected,
+            TwoBitError,
+            ThreeBitError,
         }
 
-        public static (BitBuffer, DecodingResult, string) DecodeHamming(BitBuffer message)
+        public static (BitBuffer, DecodingResult) DecodeHamming(BitBuffer message)
         {
+            var res = DecodingResult.OK;
+
             if (!HelperMath.IsPowerOfTwo(message.BitLength))
-                return (null, DecodingResult.Fail, $"message length is {message.BitLength}, not a power of 2");
+                return (null, DecodingResult.Fail);
 
             var parityBitsNum = (int)Math.Log2(message.BitLength);
 
@@ -82,6 +86,8 @@ namespace TIK2
             {
                 var wrongBit = message[mistakePosition];
                 message[mistakePosition] = (byte)(wrongBit ^ 1);
+
+                res = DecodingResult.OneBitErrorCorrected;
             }
 
             var decodedMessage = new BitBuffer();
@@ -101,13 +107,12 @@ namespace TIK2
             {
                 string log;
                 if (mistakePosition == 0)
-                    log = "2n mistakes";
+                    res = DecodingResult.TwoBitError;
                 else
-                    log = "3 + 2n mistakes";
-                return (decodedMessage, DecodingResult.PossibleMistake, log);
+                    res = DecodingResult.ThreeBitError;
             }
 
-            return (decodedMessage, DecodingResult.Sucess, "No mistakes spotted");
+            return (decodedMessage, res);
         }
     }
 }
