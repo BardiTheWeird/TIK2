@@ -313,6 +313,13 @@ namespace Helper
             for (int i = 1; i <= minLen; i++)
                 this[^i] = (byte)(this[^i] ^ b[^i]);
         }
+        public void FlipBit(int index)
+        {
+            if (!IndexInRange(index))
+                throw new IndexOutOfRangeException();
+
+            this[index] = (byte)(this[index] ^ 1);
+        }
         #endregion
 
         public override string ToString()

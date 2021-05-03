@@ -12,6 +12,14 @@ namespace TIK2
     {
         OK,
         Corrupted,
+        Corrected,
+    }
+
+    enum ErrorSearchResult
+    {
+        NoErrors,
+        SingleError,
+        MultipleErrors,
     }
 
     static class CRCMath
@@ -33,7 +41,7 @@ namespace TIK2
             while (dividedPower > divisorPower)
             {
                 var newDivisor = new BitBuffer(divisor).PadRight(0, dividedPower - divisorPower);
-                divided.Subtract(newDivisor);
+                divided -= newDivisor;
                 dividedPower = GetLargestBinPower(divided);
             }
 
@@ -48,10 +56,30 @@ namespace TIK2
             var remainder = CRCLongDivisionRemainder(numberToEncode, polynomial)[^hashSumSize..];
 
             // subtracting the remainder
-            numberToEncode.Subtract(remainder);
-            //numberToEncode -= remainder;
+            numberToEncode -= remainder;
 
             return numberToEncode;
+        }
+
+        static (int?, ErrorSearchResult) FindErroredBitPosition(BitBuffer buffer, BitBuffer polynomial)
+        {
+            int? res = null;
+
+            for (int i = 0; i < buffer.BitLength; i++)
+            {
+                buffer.FlipBit(i);
+                if (GetLargestBinPower(CRCLongDivisionRemainder(buffer, polynomial)) == -1)
+                {
+                    if (res != null)
+                        return (null, ErrorSearchResult.MultipleErrors);
+
+                    res = i;
+                }
+                buffer.FlipBit(i);
+            }
+
+            var searchResult = res == null ? ErrorSearchResult.NoErrors : ErrorSearchResult.SingleError;
+            return (res, searchResult);
         }
 
         public static (BitBuffer, CRCDecodingResult) DecodeCRC(BitBuffer encodedBlock, BitBuffer polynomial)
@@ -65,7 +93,16 @@ namespace TIK2
             CRCDecodingResult result = CRCDecodingResult.OK;
             var remainder = CRCLongDivisionRemainder(encodedBlock, polynomial);
             if (GetLargestBinPower(remainder) != -1)
-                result = CRCDecodingResult.Corrupted;
+            {
+                var errorSearchResult = FindErroredBitPosition(encodedBlock, polynomial);
+                if (errorSearchResult.Item2 == ErrorSearchResult.SingleError)
+                {
+                    encodedBlock.FlipBit((int)errorSearchResult.Item1);
+                    result = CRCDecodingResult.Corrected;
+                }
+                else
+                    result = CRCDecodingResult.Corrupted;
+            }
 
             encodedBlock.PopBits(hashSumSize);
             return (encodedBlock, result);

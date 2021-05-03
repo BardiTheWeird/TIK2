@@ -57,12 +57,15 @@ namespace TIK2
             var bitLength = br.FileLength * 8;
             bw = new BitWriter(filepathOut);
 
+            if (initialOffset > 0)
+            {
+                br.ReadBits((int)initialOffset, out var offsetBuffer);
+                bw.WriteBuffer(offsetBuffer);
+            }
+
             var previousPercentage = -1;
 
-            br.ReadBits(initialOffset, out var offsetBuffer);
-            bw.WriteBuffer(offsetBuffer);
-
-            for (long i = 0; i < bitLength - blockSize; i += blockSize)
+            for (long i = 0; i < bitLength; i += blockSize)
             {
                 if (token.IsCancellationRequested)
                 {

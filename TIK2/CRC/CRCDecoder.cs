@@ -31,6 +31,7 @@ namespace TIK2.CRC
                 var resultCount = new Dictionary<CRCDecodingResult, uint>();
                 resultCount.Add(CRCDecodingResult.OK, 0);
                 resultCount.Add(CRCDecodingResult.Corrupted, 0);
+                resultCount.Add(CRCDecodingResult.Corrected, 0);
 
                 br = new BitReader(filepathIn);
                 bw = new BitWriter(filepathOut);
@@ -71,7 +72,8 @@ namespace TIK2.CRC
                 Log = "";
                 var outString = $"Finished CRC-decoding. Encoded file: {Path.GetFileName(filepathOut)}.\n" +
                     $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s\n" +
-                    $"\tOK/Corrupted: {resultCount[CRCDecodingResult.OK]}/{resultCount[CRCDecodingResult.Corrupted]}";
+                    $"\tOK/Corrected/Corrupted: {resultCount[CRCDecodingResult.OK]}/" +
+                    $"{resultCount[CRCDecodingResult.Corrected]}/{resultCount[CRCDecodingResult.Corrupted]}";
                 _sw.Reset();
 
                 return outString;

@@ -138,9 +138,34 @@ namespace Interface
         public CRCEncoder CRCEncoder { get; set; } = new CRCEncoder();
         public CRCDecoder CRCDecoder { get; set; } = new CRCDecoder();
 
-        public uint BlockSize { get; set; }
+        uint _blockSize;
+        public uint BlockSize 
+        { 
+            get => _blockSize;
+            set
+            {
+                if (value == _blockSize)
+                    return;
 
-        public int ErrorCount { get; set; }
+                _blockSize = value;
+                RaisePropertyChanged();
+                SetFilepathOut();
+            } 
+        }
+
+        int _errorCount;
+        public int ErrorCount 
+        { 
+            get => _errorCount;
+            set
+            {
+                if (value == _errorCount)
+                    return;
+                _errorCount = value;
+                RaisePropertyChanged();
+                SetFilepathOut();
+            } 
+        }
 
         public uint InitialErrorOffset { get; set; }
 
@@ -216,7 +241,7 @@ namespace Interface
                     FilepathOut = Path.Combine(directory, nameNoExtension + " - decoded" + extension);
                     break;
                 case OperationType.InfuseErrors:
-                    var errorsString = $" [{ErrorCount} error{(ErrorCount > 1 ? "s" : "")}]";
+                    var errorsString = $" [{ErrorCount} error{(ErrorCount > 1 ? "s" : "")} per {BlockSize} bit{(BlockSize > 1 ? "s" : "")}]";
                     extension = Path.GetExtension(FilepathIn);
                     nameNoExtension = Path.GetFileNameWithoutExtension(FilepathIn);
 
