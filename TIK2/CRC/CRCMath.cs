@@ -16,62 +16,46 @@ namespace TIK2
 
     static class CRCMath
     {
-        public static BigInteger Polynomial = 0xd175; // message length = 32751; HD = 4;
+        public static BitBuffer Polynomial = new BitBuffer(0xd175); // message length = 32751; HD = 4;
 
-        public static int GetLargestBinPower(BigInteger num) // 001001 -> 3
+        public static int GetLargestBinPower(BitBuffer num) // 001001 -> 3
         {
-            var arr = num.ToByteArray();
-            var power = 8 * (arr.Length - 1);
-            var finByte = arr[^1];
-            while (finByte > 0)
-            {
-                power++;
-                finByte = (byte)(finByte >> 1);
-            }
+            var search = num.Enumerate().FirstOrDefault(pair => pair.Item2 == 1);
 
-            return power - 1;
+            return search == default((int, byte)) ? -1 : num.BitLength - search.Item1 - 1;
         }
 
-        public static BigInteger CRCLongDivisionRemainder(BigInteger divided, BigInteger divisor)
+        public static BitBuffer CRCLongDivisionRemainder(BitBuffer divided, BitBuffer divisor)
         {
             var divisorPower = GetLargestBinPower(divisor);
             var dividedPower = GetLargestBinPower(divided);
 
             while (dividedPower > divisorPower)
             {
-                divided = divided ^ (divisor << (dividedPower - divisorPower));
+                var newDivisor = new BitBuffer(divisor).PadRight(0, dividedPower - divisorPower);
+                divided.Subtract(newDivisor);
                 dividedPower = GetLargestBinPower(divided);
             }
 
-            return divisor;
+            return divided;
         }
 
-        public static BitBuffer EncodeCRC(BitBuffer message, BigInteger polynomial)
+        public static BitBuffer EncodeCRC(BitBuffer message, BitBuffer polynomial)
         {
-            if (polynomial < 1)
-                throw new ArgumentException($"you insane? your polynomial is {polynomial}");
-
             var hashSumSize = GetLargestBinPower(polynomial) + 1;
 
-            var numberToEncode = message.ToBigInteger() << hashSumSize;
-            var remainder = CRCLongDivisionRemainder(numberToEncode, polynomial);
+            var numberToEncode = new BitBuffer(message).PadRight(0, hashSumSize);
+            var remainder = CRCLongDivisionRemainder(numberToEncode, polynomial)[^hashSumSize..];
 
             // subtracting the remainder
-            numberToEncode = numberToEncode ^ remainder;
+            numberToEncode.Subtract(remainder);
+            //numberToEncode -= remainder;
 
-            var rBuffer = new BitBuffer(numberToEncode);
-            var expectedLength = message.BitLength + hashSumSize;
-            var lbuffer = new BitBuffer(0, expectedLength - rBuffer.BitLength);
-            lbuffer.AppendBuffer(rBuffer);
-
-            return lbuffer;
+            return numberToEncode;
         }
 
-        public static (BitBuffer, CRCDecodingResult) DecodeCRC(BitBuffer encodedBlock, BigInteger polynomial)
+        public static (BitBuffer, CRCDecodingResult) DecodeCRC(BitBuffer encodedBlock, BitBuffer polynomial)
         {
-            if (polynomial < 1)
-                throw new ArgumentException($"you insane? your polynomial is {polynomial}");
-
             var hashSumSize = GetLargestBinPower(polynomial) + 1;
 
             if (encodedBlock.BitLength < hashSumSize)
@@ -79,7 +63,8 @@ namespace TIK2
                     $"hash sum size for polynomial {polynomial}");
 
             CRCDecodingResult result = CRCDecodingResult.OK;
-            if (CRCLongDivisionRemainder(encodedBlock.ToBigInteger(), polynomial) != 0)
+            var remainder = CRCLongDivisionRemainder(encodedBlock, polynomial);
+            if (GetLargestBinPower(remainder) != -1)
                 result = CRCDecodingResult.Corrupted;
 
             encodedBlock.PopBits(hashSumSize);

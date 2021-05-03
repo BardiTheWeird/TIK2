@@ -5,10 +5,12 @@ using System.Runtime.InteropServices;
 using System.Collections;
 using System.Linq;
 using System.Numerics;
+using System.Dynamic;
+using System.Threading.Tasks;
 
 namespace Helper
 {
-    public class BitBuffer
+    unsafe public class BitBuffer
     {
         public List<byte> ByteBuffer { get; set; }
         public Span<byte> ByteBufferSpan => CollectionsMarshal.AsSpan(ByteBuffer);
@@ -90,10 +92,17 @@ namespace Helper
                 PopBit();
         }
 
-        public byte this[int index]
+        private int GetIndex(Index indexStruct) =>
+            indexStruct.IsFromEnd ? BitLength - indexStruct.Value : indexStruct.Value;
+
+        private bool IndexInRange(int index) =>
+            index >= 0 && index < BitLength;
+
+        unsafe public byte this[Index indexStruct]
         {
             get 
             {
+                var index = GetIndex(indexStruct);
                 var byteIndex = index / 8;
                 byte bitOffset = (byte)(index % 8);
 
@@ -107,6 +116,8 @@ namespace Helper
             }
             set
             {
+                var index = GetIndex(indexStruct);
+
                 if (value > 1)
                     throw new ArgumentException($"expected bit, got {value}");
 
@@ -130,6 +141,26 @@ namespace Helper
                     oldByte += (byte)(value << (7 - bitOffset));
                 }
                 ByteBuffer[byteIndex] = oldByte;
+            }
+        }
+
+        public BitBuffer this[Range range]
+        {
+            get
+            {
+                var start = GetIndex(range.Start);
+                var end = GetIndex(range.End);
+
+                if (!IndexInRange(start) || !(IndexInRange(end) || end == -1 || end == BitLength))
+                    throw new IndexOutOfRangeException();
+
+                var direction = -1 + 2 * Convert.ToInt32(start < end); // 1 or -1
+
+                var res = new BitBuffer();
+                for (; start != end; start += direction)
+                    res.AppendBit(this[start]);
+
+                return res;
             }
         }
 
@@ -247,6 +278,43 @@ namespace Helper
         }
         #endregion
 
+        #region CRC math
+        public static BitBuffer operator +(BitBuffer a) => a;
+        public static BitBuffer operator -(BitBuffer a) => a;
+
+        unsafe public static BitBuffer operator +(BitBuffer a, BitBuffer b)
+        {
+            BitBuffer res;
+            long minLen, maxLen;
+            if (a.BitLength < b.BitLength)
+            {
+                minLen = a.BitLength;
+                maxLen = b.BitLength;
+                res = new BitBuffer(b);
+            }
+            else
+            {
+                minLen = b.BitLength;
+                maxLen = a.BitLength;
+                res = new BitBuffer(a);
+            }
+
+            for (int i = 1; i <= minLen; i++)
+                res[^i] = (byte)(a[^i] ^ b[^i]);
+
+            return res;
+        }
+        public static BitBuffer operator -(BitBuffer a, BitBuffer b) => a + (-b);
+
+        public void Subtract(BitBuffer b)
+        {
+            var minLen = (int)Math.Min(BitLength, b.BitLength);
+
+            for (int i = 1; i <= minLen; i++)
+                this[^i] = (byte)(this[^i] ^ b[^i]);
+        }
+        #endregion
+
         public override string ToString()
         {
             if (BitLength % 8 == 0)
@@ -257,8 +325,16 @@ namespace Helper
                 .Append(Convert.ToString(ByteBuffer[^1], 2).PadLeft(BitLength % 8, '0')));
         }
 
-        public BigInteger ToBigInteger() =>
-            new BigInteger(ByteBuffer.Select(x => x).Reverse().ToArray());
+        public BigInteger ToBigInteger()
+        {
+            BigInteger res = 0;
+            for (int i = 0; i < BitLength; i++)
+            {
+                var toAdd = ((ulong)this[i]) << (BitLength - 1 - i);
+                res = res + toAdd;
+            }
+            return res;
+        }
 
         #region ctor
         public BitBuffer()
@@ -279,6 +355,7 @@ namespace Helper
         public BitBuffer(BigInteger bigInteger)
         {
             ByteBuffer = bigInteger.ToByteArray().Reverse().ToList();
+            BitLength = ByteBuffer.Count * 8;
         }
 
         public BitBuffer(byte bit, int count) : this()

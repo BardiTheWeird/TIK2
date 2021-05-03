@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Helper;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -80,7 +81,20 @@ namespace TIK2
         }
         static void Main(string[] args)
         {
+            var arrBI = new (BigInteger, int)[]
+            {
+                (0, -1),
+                (0b_0000_0001, 0),
+                (0b_0000_1001, 3),
+                (0b_0000_0100__0000_0001, 10),
+            };
 
+            var arr = arrBI.Select(pair => (new BitBuffer(pair.Item1), pair.Item2));
+
+            Console.WriteLine(string.Join("\n",
+                arr.Select(pair => (pair.Item1, CRCMath.GetLargestBinPower(pair.Item1), pair.Item2))
+                .Select(pair => $"had: {pair.Item1}; " +
+                $"received: {pair.Item2}; expected: {pair.Item3}")));
         }
     }
 }

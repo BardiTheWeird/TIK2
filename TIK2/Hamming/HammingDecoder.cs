@@ -16,7 +16,6 @@ namespace TIK2
         public string Log { get; set; }
         private Stopwatch _sw = new Stopwatch();
         private string _errorDumpPath = "hammingDecoderErrorDump.txt";
-        private string _decoderLogPath = "hammingDecoderLog.txt";
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -26,10 +25,15 @@ namespace TIK2
             BitWriter bw = null;
             try
             {
-                var logSb = new StringBuilder();
                 _sw.Start();
                 br = new BitReader(filepathIn);
                 bw = new BitWriter(filepathOut);
+
+                var resultCount = new Dictionary<HammingCodes.DecodingResult, uint>();
+                resultCount.Add(HammingCodes.DecodingResult.Sucess, 0);
+                resultCount.Add(HammingCodes.DecodingResult.PossibleMistake, 0);
+                resultCount.Add(HammingCodes.DecodingResult.Fail, 0);
+
 
                 br.ReadBits(16, out var overflownLenBuffer);
                 var overflownLen = HammingCodes.DecodeHamming(overflownLenBuffer).Item1.ByteBuffer[0];
@@ -37,7 +41,7 @@ namespace TIK2
                 {
                     br.ReadBits(blockSize, out var overflownPadded);
                     var paddedInfo = HammingCodes.DecodeHamming(overflownPadded);
-                    logSb.AppendLine(paddedInfo.Item3);
+                    resultCount[paddedInfo.Item2]++;
                     
                     var overflownInfo = new BitBuffer();
                     for (int i = 0; i < overflownLen; i++)
@@ -62,25 +66,25 @@ namespace TIK2
                     br.ReadBits(blockSize, out var encodedInfo);
                     var decoding = HammingCodes.DecodeHamming(encodedInfo);
                     bw.WriteBuffer(decoding.Item1);
-                    logSb.AppendLine(decoding.Item3);
+                    resultCount[decoding.Item2]++;
 
                     var percentage = (int)(Math.Round(br.BytesRead / (float)br.FileLength, 2) * 100);
                     if (percentage > previousPercentage)
                     {
                         previousPercentage = percentage;
-                        Log = $"Huffman-decoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                        Log = $"Hamming-decoding... {percentage * 1}%;\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
                     }
                 }
                 bw.WriteTheRestOfTheBuffer();
                 bw.StopWriting();
                 br.StopReading();
 
-                File.WriteAllText(_decoderLogPath, logSb.ToString());
-
                 _sw.Stop();
                 Log = "";
                 var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}.\n" +
-                    $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s";
+                    $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s\n" +
+                    $"\tBlocks with possible mistakes: {resultCount[HammingCodes.DecodingResult.PossibleMistake]}\n" +
+                    $"\tBlocks with failed decoding: {resultCount[HammingCodes.DecodingResult.Fail]}";
                 _sw.Reset();
                 return res;
             }
