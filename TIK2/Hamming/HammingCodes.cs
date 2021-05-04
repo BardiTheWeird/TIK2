@@ -65,7 +65,7 @@ namespace TIK2
             OK,
             OneBitErrorCorrected,
             TwoBitError,
-            ThreeBitError,
+            //ThreeBitError,
         }
 
         public static (BitBuffer, DecodingResult) DecodeHamming(BitBuffer message)
@@ -81,13 +81,20 @@ namespace TIK2
                 .Where(x => x.Item2 == 1)
                 .Select(x => x.Item1);
 
+            var totalParity = onesPositions.Count() % 2;
             var mistakePosition = onesPositions.Aggregate(0, (x, y) => x ^ y);
+
             if (mistakePosition != 0)
             {
-                var wrongBit = message[mistakePosition];
-                message[mistakePosition] = (byte)(wrongBit ^ 1);
-
-                res = DecodingResult.OneBitErrorCorrected;
+                if (totalParity == 1)
+                {
+                    res = DecodingResult.OneBitErrorCorrected;
+                    message.FlipBit(mistakePosition);
+                }
+                else
+                {
+                    res = DecodingResult.TwoBitError;
+                }
             }
 
             var decodedMessage = new BitBuffer();
@@ -101,16 +108,6 @@ namespace TIK2
 
             foreach (var bit in messageBits)
                 decodedMessage.AppendBit(bit);
-
-            var totalParity = onesPositions.Count() % 2;
-            if (totalParity != 0)
-            {
-                string log;
-                if (mistakePosition == 0)
-                    res = DecodingResult.TwoBitError;
-                else
-                    res = DecodingResult.ThreeBitError;
-            }
 
             return (decodedMessage, res);
         }

@@ -34,7 +34,6 @@ namespace TIK2
                 resultCount.Add(HammingCodes.DecodingResult.OK, 0);
                 resultCount.Add(HammingCodes.DecodingResult.OneBitErrorCorrected, 0);
                 resultCount.Add(HammingCodes.DecodingResult.TwoBitError, 0);
-                resultCount.Add(HammingCodes.DecodingResult.ThreeBitError, 0);
 
                 br.ReadBits(32, out var overflownLenBuffer);
                 var overflownLen = HammingCodes.DecodeHamming(overflownLenBuffer).Item1.ToBigInteger();
@@ -84,11 +83,10 @@ namespace TIK2
                 Log = "";
                 var res = $"Finished decoding. Decoded file:{Path.GetFileName(filepathOut)}.\n" +
                     $"\tTime elapsed: {_sw.ElapsedMilliseconds / 1000f:.00}s\n" +
-                    $"\tFailed: {resultCount[HammingCodes.DecodingResult.Fail]}" + 
+                    $"\tFailed: {resultCount[HammingCodes.DecodingResult.Fail]}\n" +
                     $"\tOK: {resultCount[HammingCodes.DecodingResult.OK]}\n" +
                     $"\t1-bit error corrected: {resultCount[HammingCodes.DecodingResult.OneBitErrorCorrected]}\n" +
-                    $"\t2-bit error: {resultCount[HammingCodes.DecodingResult.TwoBitError]}\n" +
-                    $"\t3-bit error: {resultCount[HammingCodes.DecodingResult.ThreeBitError]}";
+                    $"\t2-bit error: {resultCount[HammingCodes.DecodingResult.TwoBitError]}";
                 _sw.Reset();
                 return res;
             }
