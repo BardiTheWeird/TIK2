@@ -17,7 +17,6 @@ namespace TIK2
 
     enum ErrorSearchResult
     {
-        NoErrors,
         SingleError,
         MultipleErrors,
     }
@@ -78,7 +77,7 @@ namespace TIK2
                 buffer.FlipBit(i);
             }
 
-            var searchResult = res == null ? ErrorSearchResult.NoErrors : ErrorSearchResult.SingleError;
+            var searchResult = res == null ? ErrorSearchResult.MultipleErrors : ErrorSearchResult.SingleError;
             return (res, searchResult);
         }
 
